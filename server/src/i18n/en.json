@@ -1,0 +1,28 @@
+{
+  "notifications": {
+    "APPLICATION_SUBMITTED": {
+      "subject": "Application Submitted: {appNo}",
+      "body": "Your application for {schemeName} has been submitted successfully. Tracking number: {appNo}."
+    },
+    "OCR_COMPLETED": {
+      "subject": "Document OCR Analysis Completed",
+      "body": "OCR verification completed for {docLabel}. Status: {status}."
+    },
+    "DEFICIENCY_RAISED": {
+      "subject": "Deficiency Notice: Action Required",
+      "body": "A deficiency has been raised on {docLabel}: {reason}. Please re-upload by {dueDate}."
+    },
+    "SELECTION_OFFER": {
+      "subject": "Provisional Selection Offer - MoTA Fellowship",
+      "body": "Congratulations! You have been provisionally selected for {schemeName}. Please review your award details."
+    },
+    "DEADLINE_REMINDER": {
+      "subject": "Scheme Application Closing Soon",
+      "body": "Reminder: Applications for {schemeName} close in {days} days on {closeDate}."
+    },
+    "DISBURSEMENT_RELEASED": {
+      "subject": "Fellowship Installment Released",
+      "body": "Installment #{installmentNo} of Rs {amount} has been released to your registered account."
+    }
+  }
+}

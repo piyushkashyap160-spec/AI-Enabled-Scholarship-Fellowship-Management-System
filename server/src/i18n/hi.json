@@ -1,0 +1,28 @@
+{
+  "notifications": {
+    "APPLICATION_SUBMITTED": {
+      "subject": "आवेदन सफलतापूर्वक जमा: {appNo}",
+      "body": "{schemeName} के लिए आपका आवेदन सफलतापूर्वक प्राप्त हो गया है। ट्रैकिंग संख्या: {appNo}।"
+    },
+    "OCR_COMPLETED": {
+      "subject": "दस्तावेज़ ओसीआर विश्लेषण पूर्ण",
+      "body": "{docLabel} के लिए सत्यापन पूर्ण हो चुका है। स्थिति: {status}।"
+    },
+    "DEFICIENCY_RAISED": {
+      "subject": "त्रुटि सूचना: सुधार आवश्यक है",
+      "body": "{docLabel} में त्रुटि पाई गई है: {reason}। कृपया {dueDate} से पहले पुनः अपलोड करें।"
+    },
+    "SELECTION_OFFER": {
+      "subject": "अनंतिम चयन सूचना - जनजातीय कार्य मंत्रालय",
+      "body": "बधाई हो! आपका चयन {schemeName} के लिए अनंतिम रूप से कर लिया गया है।"
+    },
+    "DEADLINE_REMINDER": {
+      "subject": "योजना आवेदन की अंतिम तिथि निकट है",
+      "body": "स्मरण पत्र: {schemeName} के लिए आवेदन {days} दिनों में {closeDate} को समाप्त हो रहे हैं।"
+    },
+    "DISBURSEMENT_RELEASED": {
+      "subject": "छात्रवृत्ति किस्त जारी",
+      "body": "किस्त #{installmentNo} की राशि ₹{amount} आपके पंजीकृत खाते में स्थानांतरित कर दी गई है।"
+    }
+  }
+}
