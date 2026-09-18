@@ -41,9 +41,12 @@ const SchemeList = () => {
             size="sm"
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
-            style={{ width: '160px' }}
+            style={{ width: '190px' }}
           >
-            <option value="all">All Programmes</option>
+            <option value="all">All Levels (5 Schemes)</option>
+            <option value="10th">Class 9th & 10th (Pre-Matric)</option>
+            <option value="12th">Class 11th & 12th / Diploma</option>
+            <option value="bachelors">Undergraduate / Degree</option>
             <option value="masters">Master's Level</option>
             <option value="phd">Ph.D. / Research</option>
           </Form.Select>

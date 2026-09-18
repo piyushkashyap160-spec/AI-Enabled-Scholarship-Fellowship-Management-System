@@ -52,8 +52,17 @@ const schemeSchema = new mongoose.Schema({
   },
   level: {
     type: String,
-    enum: ['masters', 'phd', 'research', 'higher_secondary', 'undergraduate', 'all'],
+    enum: ['masters', 'phd', 'research', 'higher_secondary', 'undergraduate', 'bachelors', '10th', '12th', 'all'],
     default: 'all'
+  },
+  schemeType: {
+    type: String,
+    enum: ['Central Sector Scheme', 'Centrally Sponsored Scheme'],
+    default: 'Central Sector Scheme'
+  },
+  benefitType: {
+    type: String,
+    default: 'In Cash (DBT)'
   },
   category: {
     type: String,

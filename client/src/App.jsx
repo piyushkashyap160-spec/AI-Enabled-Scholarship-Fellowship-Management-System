@@ -18,6 +18,7 @@ import EligibilityChecker from './pages/public/EligibilityChecker';
 import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import VerifyOtp from './pages/public/VerifyOtp';
+import MachineLearningHub from './pages/public/MachineLearningHub';
 
 // Applicant Pages
 import ApplicantDashboard from './pages/applicant/ApplicantDashboard';
@@ -65,6 +66,7 @@ function App() {
                 <Route path="/schemes" element={<SchemeList />} />
                 <Route path="/schemes/:id" element={<SchemeDetail />} />
                 <Route path="/eligibility" element={<EligibilityChecker />} />
+                <Route path="/ml-hub" element={<MachineLearningHub />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-otp" element={<VerifyOtp />} />

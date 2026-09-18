@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, ButtonGroup, Button } from 'react-bootstrap';
 import { useLanguage } from '../context/LanguageContext';
-import { Globe } from 'lucide-react';
+import { Globe, Moon, Sun } from 'lucide-react';
 
 const GovHeader = () => {
   const { lang, setLang, t } = useLanguage();
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   return (
     <header className="gov-header-wrapper">
@@ -30,6 +40,17 @@ const GovHeader = () => {
           </div>
 
           <div className="d-flex align-items-center gap-3">
+            {/* Theme Switcher */}
+            <button
+              onClick={toggleTheme}
+              className="btn btn-sm d-flex align-items-center gap-1.5 bg-white bg-opacity-10 text-white border-0 py-1 px-2.5 rounded"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              style={{ fontSize: '0.82rem' }}
+            >
+              {theme === 'dark' ? <Sun size={15} className="text-warning" /> : <Moon size={15} className="text-info" />}
+              <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+            </button>
+
             {/* Language Switcher */}
             <div className="d-flex align-items-center gap-1 bg-white bg-opacity-10 px-2 py-1 rounded">
               <Globe size={15} className="text-warning" />

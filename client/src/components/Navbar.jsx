@@ -45,6 +45,9 @@ const Navbar = () => {
             <Nav.Link as={NavLink} to="/eligibility" className="gov-nav-link text-warning fw-semibold">
               {t('nav.eligibility', 'Eligibility Pre-Check')}
             </Nav.Link>
+            <Nav.Link as={NavLink} to="/ml-hub" className="gov-nav-link text-info fw-semibold">
+              ⚡ ML Hub (AI Models)
+            </Nav.Link>
 
             {/* Quick Link based on logged-in role */}
             {isAuthenticated && (

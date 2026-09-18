@@ -31,13 +31,24 @@ const EligibilityChecker = () => {
     const fetchSchemes = async () => {
       try {
         const res = await axiosClient.get('/schemes?active=true');
-        if (res.data.success) {
-          setSchemes(res.data.schemes || []);
+        if (res.data.success && res.data.schemes?.length > 0) {
+          setSchemes(res.data.schemes);
+          if (!searchParams.get('scheme')) {
+            setSelectedSchemeCode(res.data.schemes[0].code);
+          }
         }
       } catch (e) {}
     };
     fetchSchemes();
   }, []);
+
+  // Set default code from URL if provided
+  useEffect(() => {
+    const urlScheme = searchParams.get('scheme');
+    if (urlScheme) {
+      setSelectedSchemeCode(urlScheme.toUpperCase());
+    }
+  }, [searchParams]);
 
   // Pre-fill profile data if user is logged in
   useEffect(() => {
@@ -52,6 +63,24 @@ const EligibilityChecker = () => {
       }));
     }
   }, [user]);
+
+  // Adjust education level defaults when switching schemes for better demo UX
+  const handleSchemeChange = (code) => {
+    setSelectedSchemeCode(code);
+    setResult(null);
+
+    if (code === 'BPVGK') {
+      setFormData(prev => ({ ...prev, educationLevel: '10th', course: 'Class X Secondary', familyIncome: 200000, age: 15 }));
+    } else if (code === 'BVOBC') {
+      setFormData(prev => ({ ...prev, educationLevel: '12th', course: 'Class XII Higher Secondary', familyIncome: 220000, age: 17 }));
+    } else if (code === 'A023B') {
+      setFormData(prev => ({ ...prev, educationLevel: 'bachelors', course: 'B.Tech Computer Science (IIT/NIT)', familyIncome: 500000, age: 20 }));
+    } else if (code === 'ARG45' || code === 'NFST') {
+      setFormData(prev => ({ ...prev, educationLevel: 'masters', course: 'M.Sc. / Ph.D. Research', familyIncome: 450000, age: 25 }));
+    } else if (code === 'AZKMI' || code === 'NOS') {
+      setFormData(prev => ({ ...prev, educationLevel: 'masters', course: 'M.S. in Data Science (Abroad)', familyIncome: 550000, age: 26, country: 'United States' }));
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,6 +112,14 @@ const EligibilityChecker = () => {
     }
   };
 
+  const officialSchemes = [
+    { code: 'ARG45', name: 'National Fellowship for ST Students (NFST)', level: 'Masters / Ph.D. in India' },
+    { code: 'AZKMI', name: 'National Overseas Scholarship (NOS)', level: 'Masters / Ph.D. Abroad' },
+    { code: 'A023B', name: 'Top Class Education for ST Students', level: 'Undergraduate / Premier Institutes' },
+    { code: 'BVOBC', name: 'Post-Matric Scholarship for ST Students', level: 'Class 11, 12, Degree, Diploma' },
+    { code: 'BPVGK', name: 'Pre-Matric Scholarship for ST Students', level: 'Classes 9th & 10th' },
+  ];
+
   return (
     <Container className="py-4">
       {/* Page Title */}
@@ -113,14 +150,14 @@ const EligibilityChecker = () => {
                   <Form.Label className="small fw-bold text-dark">Select Target Scheme</Form.Label>
                   <Form.Select
                     value={selectedSchemeCode}
-                    onChange={(e) => {
-                      setSelectedSchemeCode(e.target.value);
-                      setResult(null);
-                    }}
+                    onChange={(e) => handleSchemeChange(e.target.value)}
                     required
                   >
-                    <option value="NFST">NFST — National Fellowship for ST (India)</option>
-                    <option value="NOS">NOS — National Overseas Scholarship (Abroad)</option>
+                    {(schemes.length > 0 ? schemes : officialSchemes).map(s => (
+                      <option key={s.code || s._id} value={s.code}>
+                        {s.code} — {s.name} ({s.level || 'ST Welfare'})
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
 

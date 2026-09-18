@@ -22,6 +22,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import chatbotRoutes from './routes/chatbotRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import disbursementRoutes from './routes/disbursementRoutes.js';
+import mlRoutes from './routes/mlRoutes.js';
 
 dotenv.config();
 
@@ -82,6 +83,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/disbursements', disbursementRoutes);
+app.use('/api/ml', mlRoutes);
 
 // Central Error Handler
 app.use(errorHandler);

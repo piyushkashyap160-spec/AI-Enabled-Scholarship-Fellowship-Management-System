@@ -11,8 +11,24 @@
   --gov-card-border: #e2e8f0;
   --gov-text-main: #1e293b;
   --gov-text-muted: #64748b;
+  --gov-text-secondary: #475569;
+  --gov-card-bg: #ffffff;
+  --gov-card-header-bg: #f8fafc;
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --gov-navy: #1e3a8a;
+  --gov-navy-dark: #f8fafc; /* Headings become white */
+  --gov-navy-light: #3b82f6;
+  --gov-bg-gray: #090e1a;
+  --gov-card-border: #1e293b;
+  --gov-text-main: #f8fafc; /* Main body text becomes crisp white/off-white */
+  --gov-text-muted: #94a3b8;
+  --gov-text-secondary: #cbd5e1;
+  --gov-card-bg: #0f172a;
+  --gov-card-header-bg: #1e293b;
 }
 
 body {
@@ -24,6 +40,445 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* UNIVERSAL DARK MODE TEXT CONVERSION */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .text-dark {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .text-secondary {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .text-muted {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .gov-card {
+  background: var(--gov-card-bg) !important;
+  border-color: var(--gov-card-border) !important;
+  color: var(--gov-text-main) !important;
+}
+
+[data-theme="dark"] .gov-card-header {
+  background: var(--gov-card-header-bg) !important;
+  border-color: var(--gov-card-border) !important;
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .card {
+  background-color: var(--gov-card-bg) !important;
+  border-color: var(--gov-card-border) !important;
+  color: var(--gov-text-main) !important;
+}
+
+[data-theme="dark"] .card-body {
+  color: var(--gov-text-main) !important;
+}
+
+[data-theme="dark"] .card-body strong,
+[data-theme="dark"] .gov-card strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .bg-white {
+  background-color: var(--gov-card-bg) !important;
+  color: var(--gov-text-main) !important;
+}
+
+[data-theme="dark"] .bg-light {
+  background-color: #1e293b !important;
+  color: var(--gov-text-main) !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .bg-light strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .bg-light .text-muted {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .table {
+  color: var(--gov-text-main) !important;
+  border-color: #1e293b !important;
+}
+
+[data-theme="dark"] .table thead th {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .table tbody td {
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+  background-color: #1e293b !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: #1e293b !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
+}
+
+[data-theme="dark"] .form-label {
+  color: #f8fafc !important;
+}
+
+/* Preserve accent colors in dark mode with high contrast */
+[data-theme="dark"] .text-primary {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .text-success {
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .text-warning {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .text-info {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .text-danger {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .border-top,
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-end,
+[data-theme="dark"] .border-start {
+  border-color: #1e293b !important;
+}
+
+/* 5-Second Carousel Animations & Hero Dashboard */
+.carousel-progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.carousel-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FF9933, #facc15, #22c55e);
+  animation: fillProgress 5s linear infinite;
+}
+
+@keyframes fillProgress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+.slide-fade-enter {
+  animation: slideFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Full Viewport Dashboard Hero */
+.hero-full-viewport {
+  min-height: calc(100vh - 105px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f2445 0%, #1a3a6b 40%, #162f55 100%);
+}
+
+[data-theme="dark"] .hero-full-viewport {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 45%, #1e1b4b 100%);
+}
+
+/* 3D Visual Artwork Frame & Floating Badges */
+.hero-3d-frame-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1000px;
+}
+
+.hero-3d-image-card {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  width: 100%;
+  max-width: 540px;
+}
+
+.hero-3d-image-card:hover {
+  transform: translateY(-6px) rotateX(2deg) rotateY(-2deg);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 30px rgba(56, 189, 248, 0.3);
+}
+
+.hero-3d-image-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s ease;
+}
+
+.hero-3d-image-card:hover img {
+  transform: scale(1.03);
+}
+
+/* Floating 3D Badge Chips */
+.floating-3d-badge {
+  position: absolute;
+  z-index: 5;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 0.6rem 1.1rem;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: floatUpDown 4s ease-in-out infinite alternate;
+}
+
+.floating-3d-badge.top-left {
+  top: -16px;
+  left: -16px;
+  animation-delay: 0s;
+}
+
+.floating-3d-badge.bottom-right {
+  bottom: -16px;
+  right: -16px;
+  animation-delay: 1.5s;
+}
+
+.floating-3d-badge.bottom-left {
+  bottom: 12px;
+  left: -18px;
+  animation-delay: 0.8s;
+}
+
+@keyframes floatUpDown {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-10px); }
+}
+
+/* Decorative Dotted Grid (inspired by myScheme) */
+.decorative-dot-grid {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 1.5px, transparent 1.5px);
+  background-size: 14px 14px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.decorative-dot-grid.top-right {
+  top: 10px;
+  right: 10px;
+}
+
+.decorative-dot-grid.bottom-left {
+  bottom: 10px;
+  left: 10px;
+}
+
+/* Hashtag Strip & Find Schemes Bar (Expanded Padding) */
+.hero-bottom-tag-strip {
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 1.8rem 1.5rem 2.2rem 1.5rem;
+  text-align: center;
+}
+
+.find-schemes-pill-btn {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 50%, #14532d 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 0.95rem 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  letter-spacing: 0.3px;
+}
+
+.find-schemes-pill-btn:hover {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 30px rgba(34, 197, 94, 0.6);
+  color: #ffffff !important;
+}
+
+/* Statistics Live Metrics Counter Section (Spacious & Grand) */
+.stats-counter-strip {
+  background: #ffffff;
+  border-bottom: 1px solid var(--gov-card-border);
+  padding: 3.2rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .stats-counter-strip {
+  background: #0b1329;
+  border-bottom: 1px solid #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.stat-metric-card {
+  padding: 1.6rem 1.2rem;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+[data-theme="dark"] .stat-metric-card {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.stat-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+}
+
+[data-theme="dark"] .stat-metric-card:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  border-color: #38bdf8;
+}
+
+.stat-metric-number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 0.45rem;
+  letter-spacing: -0.5px;
+}
+
+.stat-metric-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .stat-metric-label {
+  color: #94a3b8;
+}
+
+/* See More Schemes Interactive Button */
+.see-more-schemes-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+}
+
+.see-more-schemes-btn {
+  background: #ffffff;
+  color: var(--gov-navy);
+  border: 2px solid var(--gov-navy);
+  padding: 0.85rem 2.4rem;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 15px rgba(26, 58, 107, 0.12);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.see-more-schemes-btn:hover {
+  background: var(--gov-navy);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(26, 58, 107, 0.25);
+}
+
+.see-more-schemes-btn .arrow-icon {
+  transition: transform 0.3s ease;
+}
+
+.see-more-schemes-btn:hover .arrow-icon {
+  transform: translateX(4px);
+}
+
+[data-theme="dark"] .see-more-schemes-btn {
+  background: #0f172a;
+  color: #60a5fa;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .see-more-schemes-btn:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #60a5fa;
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.5);
 }
 
 #root {
@@ -350,4 +805,85 @@ h1, h2, h3, h4, h5, h6 {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Dark Mode Components Overrides */
+[data-theme="dark"] .gov-sidebar-item {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .gov-sidebar-item:hover {
+  background-color: #1e293b;
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .gov-sidebar-item.active {
+  background-color: #1e3a8a;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .timeline-label {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .timeline-date {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .timeline-circle {
+  border-color: #0f172a;
+}
+
+[data-theme="dark"] .chat-window {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .modal-content {
+  background-color: #0f172a;
+  color: #f8fafc;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .dropdown-menu {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .btn-gov-secondary {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .btn-gov-secondary:hover {
+  background-color: #334155;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .btn-outline-dark {
+  border-color: #64748b;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .btn-outline-dark:hover {
+  background-color: #334155;
+  border-color: #94a3b8;
+  color: #ffffff;
 }
