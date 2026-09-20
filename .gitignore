@@ -1,0 +1,29 @@
+﻿# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment
+.env
+.env.local
+server/.env
+client/.env
+
+# Server uploads (keep sample files)
+server/uploads/*
+!server/uploads/samples/
+!server/uploads/samples/**
+
+# Build outputs
+dist/
+client/dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS metadata
+.DS_Store
+Thumbs.db
