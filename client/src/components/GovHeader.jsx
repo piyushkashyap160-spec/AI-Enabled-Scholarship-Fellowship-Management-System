@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Container, ButtonGroup, Button } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { Globe, Moon, Sun } from 'lucide-react';
+import { Award, Globe, Moon, Sun } from 'lucide-react';
 
 const GovHeader = () => {
-  const { lang, setLang, t } = useLanguage();
+  const { lang, setLang } = useLanguage();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
@@ -13,69 +14,113 @@ const GovHeader = () => {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   return (
     <header className="gov-header-wrapper">
-      {/* Top Utility Bar */}
-      <div className="gov-header-bg py-2 border-bottom border-secondary border-opacity-25">
-        <Container className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div className="d-flex align-items-center gap-3">
-            {/* National Emblem SVG */}
-            <svg width="34" height="42" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-              <path d="M50 5 L60 25 L85 25 L65 40 L73 65 L50 50 L27 65 L35 40 L15 25 L40 25 Z" fill="#FF9933"/>
-              <circle cx="50" cy="85" r="22" stroke="#FFFFFF" strokeWidth="4" fill="#000080"/>
-              <circle cx="50" cy="85" r="4" fill="#FFFFFF"/>
-              <path d="M50 63 L50 107 M28 85 L72 85 M34 69 L66 101 M34 101 L66 69" stroke="#FFFFFF" strokeWidth="2"/>
-            </svg>
-            <div>
-              <div className="fw-bold text-white fs-6" style={{ letterSpacing: '0.3px' }}>
-                {lang === 'hi' ? 'जनजातीय कार्य मंत्रालय, भारत सरकार' : 'Ministry of Tribal Affairs, Government of India'}
+      {/* Tricolour Accent Line at Very Top */}
+      <div className="gov-tricolour-strip"></div>
+
+      {/* Main Government Portal Header with 10px Increased Padding */}
+      <div className="gov-top-header border-bottom" style={{ paddingTop: '10px', paddingBottom: '20px' }}>
+        <Container className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+          {/* Brand Logo & Titles */}
+          <Link to="/" className="d-flex align-items-center gap-3 text-decoration-none">
+            {/* Navy Emblem Icon Box with Golden Ribbon */}
+            <div
+              className="gov-emblem-box rounded-3 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+              style={{ width: '50px', height: '50px', backgroundColor: '#0B2545' }}
+            >
+              <Award size={28} className="text-warning" strokeWidth={2.2} />
+            </div>
+
+            {/* Title Hierarchy */}
+            <div className="d-flex flex-column">
+              {/* Row 1: Government of India Pill & SIH ID */}
+              <div className="d-flex align-items-center gap-2 mb-1">
+                <span
+                  className="gov-pill-badge"
+                  style={{
+                    backgroundColor: '#fffbeb',
+                    color: '#d97706',
+                    border: '1px solid #fde68a',
+                    fontSize: '0.75rem',
+                    fontWeight: '800',
+                    padding: '2px 8px',
+                    borderRadius: '50rem',
+                    letterSpacing: '0.4px',
+                    lineHeight: '1.2'
+                  }}
+                >
+                  GOVERNMENT OF INDIA
+                </span>
+                <span className="text-muted" style={{ fontSize: '0.85rem', fontWeight: '500' }}>
+                  SIH-26239
+                </span>
               </div>
-              <div className="text-white-50 small" style={{ fontSize: '0.78rem' }}>
-                {lang === 'hi' ? 'स्मार्ट इंडिया हैकाथॉन पीएस 26239 | राष्ट्रीय छात्रवृत्ति एवं फैलोशिप पोर्टल' : 'Smart India Hackathon PS 26239 | National Scholarship & Fellowship Portal'}
+
+              {/* Row 2: Hindi & English Ministry Title */}
+              <div
+                className="gov-title-text fw-bold text-dark"
+                style={{ fontSize: '1.25rem', letterSpacing: '-0.2px', lineHeight: '1.25' }}
+              >
+                <span className="text-navy">जनजातीय कार्य मंत्रालय</span>{' '}
+                <span className="text-muted fw-normal" style={{ opacity: 0.7 }}>|</span>{' '}
+                <span className="text-navy">Ministry of Tribal Affairs</span>
+              </div>
+
+              {/* Row 3: Subtitle */}
+              <div className="gov-subtitle-text text-muted" style={{ fontSize: '1rem', lineHeight: '1.2' }}>
+                National Fellowship &amp; Scholarship Management System for Scheduled Tribes (ST)
               </div>
             </div>
-          </div>
+          </Link>
 
+          {/* Right Action Bar (Language Switcher & Theme Switcher) */}
           <div className="d-flex align-items-center gap-3">
-            {/* Theme Switcher */}
-            <button
-              onClick={toggleTheme}
-              className="btn btn-sm d-flex align-items-center gap-1.5 bg-white bg-opacity-10 text-white border-0 py-1 px-2.5 rounded"
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-              style={{ fontSize: '0.82rem' }}
-            >
-              {theme === 'dark' ? <Sun size={15} className="text-warning" /> : <Moon size={15} className="text-info" />}
-              <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-            </button>
-
             {/* Language Switcher */}
-            <div className="d-flex align-items-center gap-1 bg-white bg-opacity-10 px-2 py-1 rounded">
-              <Globe size={15} className="text-warning" />
+            <div className="d-flex align-items-center gap-1.5 bg-light border px-2.5 py-1.5 rounded-2 gap-1">
+              <Globe size={15} className="text-primary" />
               <button
-                className={`btn btn-sm py-0 px-1 border-0 text-white ${lang === 'en' ? 'fw-bold text-warning text-decoration-underline' : 'opacity-75'}`}
+                className={`btn btn-sm py-0 px-1 border-0 ${lang === 'en' ? 'fw-bold text-primary text-decoration-underline' : 'text-muted'}`}
                 onClick={() => setLang('en')}
-                style={{ fontSize: '0.82rem' }}
+                style={{ fontSize: '1.2rem' }}
               >
                 English
               </button>
-              <span className="text-white-50">|</span>
+              <span className="text-muted" style={{ fontSize: '0.75rem' }}>|</span>
               <button
-                className={`btn btn-sm py-0 px-1 border-0 text-white ${lang === 'hi' ? 'fw-bold text-warning text-decoration-underline' : 'opacity-75'}`}
+                className={`btn btn-sm py-0 px-1 border-0 ${lang === 'hi' ? 'fw-bold text-primary text-decoration-underline' : 'text-muted'}`}
                 onClick={() => setLang('hi')}
-                style={{ fontSize: '0.82rem' }}
+                style={{ fontSize: '1.2rem' }}
               >
                 हिन्दी
               </button>
             </div>
+
+            {/* Theme Toggle (Dark / Light) */}
+            <button
+              onClick={toggleTheme}
+              className="btn btn-sm btn-light border py-1.5 px-2.5 rounded-2 d-flex align-items-center gap-1.5"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              style={{ fontSize: '1.2rem' }}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun size={15} className="text-warning" />
+                  <span className="small">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon size={15} className="text-secondary" />
+                  <span className="small">Dark</span>
+                </>
+              )}
+            </button>
           </div>
         </Container>
       </div>
-
-      {/* Tricolour Accent Line */}
-      <div className="gov-tricolour-strip"></div>
     </header>
   );
 };
