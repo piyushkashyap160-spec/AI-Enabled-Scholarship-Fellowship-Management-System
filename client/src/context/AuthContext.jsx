@@ -64,6 +64,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('mota_user');
   };
 
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      logout();
+    };
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => {
+      window.removeEventListener('auth:expired', handleAuthExpired);
+    };
+  }, []);
+
   const updateUserProfile = (updatedUser) => {
     setUser(updatedUser);
     localStorage.setItem('mota_user', JSON.stringify(updatedUser));

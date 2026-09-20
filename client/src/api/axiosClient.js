@@ -26,6 +26,7 @@ axiosClient.interceptors.response.use(
       if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
         localStorage.removeItem('mota_token');
         localStorage.removeItem('mota_user');
+        window.dispatchEvent(new Event('auth:expired'));
       }
     }
     return Promise.reject(error);
