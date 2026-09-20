@@ -55,8 +55,18 @@ const documentSchema = new mongoose.Schema({
     type: String,
     default: 'unknown'
   },
-  classificationConfidence: { type: Number, default: 0 },
-  matchedKeywords: { type: [String], default: [] },
+  // Confidence in the DOCUMENT-TYPE classification itself - distinct from
+  // `confidence` above, which only reflects OCR legibility. A crisp,
+  // perfectly legible file can still have a low/zero classificationConfidence
+  // if the classifier can't confirm what kind of document it is.
+  classificationConfidence: {
+    type: Number,
+    default: 0
+  },
+  matchedKeywords: {
+    type: [String],
+    default: []
+  },
   mismatches: [mismatchSchema],
   verificationStatus: {
     type: String,

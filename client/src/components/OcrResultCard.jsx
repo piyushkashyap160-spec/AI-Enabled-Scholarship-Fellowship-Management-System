@@ -45,38 +45,41 @@ const OcrResultCard = ({ document: doc, onPreview = null }) => {
       </Card.Header>
 
       <Card.Body className="p-3">
-        {/* OCR Confidence & Classification */}
-        <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2 pb-2 border-bottom">
-          <div className="d-flex align-items-center gap-2">
+        {/* Detected Type + two DISTINCT confidence scores. These answer
+            different questions - could the text be read at all (legibility),
+            vs. does the text actually match this document type (classification)
+            - and are shown separately on purpose, rather than as one combined
+            "OCR Confidence" figure that made a clearly-legible but unrelated
+            file look confidently classified. */}
+        <div className="mb-3 pb-2 border-bottom">
+          <div className="d-flex align-items-center gap-2 mb-2">
             <Cpu size={16} className="text-secondary" />
             <span className="small text-muted">Detected Type:</span>
             <span className="badge bg-secondary">
-              {(!doc.detectedDocType || doc.detectedDocType === 'unknown') ? 'Unrecognized' : formatKey(doc.detectedDocType)}
+              {doc.detectedDocType && doc.detectedDocType !== 'unknown' ? formatKey(doc.detectedDocType) : 'Unrecognized'}
             </span>
           </div>
 
-          <div className="d-flex align-items-center gap-3 flex-wrap">
-            <div className="d-flex align-items-center gap-2" style={{ minWidth: '220px' }}>
-              <span className="small text-muted text-nowrap">Document Type Match:</span>
-              <ProgressBar
-                now={doc.classificationConfidence || 0}
-                variant={!doc.classificationConfidence ? 'secondary' : (doc.classificationConfidence >= 80 ? 'success' : (doc.classificationConfidence >= 65 ? 'warning' : 'danger'))}
-                label={!doc.classificationConfidence ? 'N/A' : `${doc.classificationConfidence}%`}
-                className="w-100"
-                style={{ height: '18px', fontSize: '0.75rem', fontWeight: 'bold' }}
-              />
-            </div>
+          <div className="d-flex align-items-center gap-2 mb-1">
+            <span className="small text-muted text-nowrap" style={{ width: '170px' }}>Document Type Match:</span>
+            <ProgressBar
+              now={doc.classificationConfidence || 0}
+              variant={doc.classificationConfidence >= 65 ? 'success' : (doc.classificationConfidence > 0 ? 'warning' : 'secondary')}
+              label={doc.classificationConfidence > 0 ? `${doc.classificationConfidence}%` : 'N/A'}
+              className="w-100"
+              style={{ height: '16px', fontSize: '0.72rem', fontWeight: 'bold' }}
+            />
+          </div>
 
-            <div className="d-flex align-items-center gap-2" style={{ minWidth: '180px' }}>
-              <span className="small text-muted text-nowrap">OCR Legibility:</span>
-              <ProgressBar
-                now={doc.confidence || 0}
-                variant={doc.confidence >= 80 ? 'success' : (doc.confidence >= 60 ? 'warning' : 'danger')}
-                label={`${doc.confidence || 0}%`}
-                className="w-100"
-                style={{ height: '18px', fontSize: '0.75rem', fontWeight: 'bold' }}
-              />
-            </div>
+          <div className="d-flex align-items-center gap-2">
+            <span className="small text-muted text-nowrap" style={{ width: '170px' }}>OCR Legibility:</span>
+            <ProgressBar
+              now={doc.confidence || 0}
+              variant={doc.confidence >= 80 ? 'success' : (doc.confidence >= 60 ? 'warning' : 'danger')}
+              label={`${doc.confidence || 0}%`}
+              className="w-100"
+              style={{ height: '16px', fontSize: '0.72rem', fontWeight: 'bold' }}
+            />
           </div>
         </div>
 

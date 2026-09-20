@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { execFile } from 'child_process';
+import { fileURLToPath } from 'url';
 import pdfParse from 'pdf-parse';
 import { createWorker } from 'tesseract.js';
 import Document from '../models/Document.js';
@@ -8,6 +10,10 @@ import Application from '../models/Application.js';
 import Deficiency from '../models/Deficiency.js';
 import VerificationLog from '../models/VerificationLog.js';
 import { sendNotification } from './notificationService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '../../../');
 
 /**
  * Compute SHA-256 hash of a file
@@ -109,66 +115,90 @@ const DOC_TYPE_SIGNATURES = {
   }
 };
 
+const STRONG_WEIGHT = 3;
+const WEAK_WEIGHT = 1;
+const MIN_TEXT_LENGTH = 40;          // text shorter than this is too thin to classify at all
+const MIN_SCORE_TO_CLASSIFY = 6;     // roughly: two strong hits, or one strong + corroborating weak hits
+const MIN_MARGIN_OVER_RUNNER_UP = 3; // if a second type is nearly as likely, it's genuinely ambiguous
+
 /**
- * Classify document type based on keyword signatures in extracted text
+ * Offline fallback classifier used ONLY if the trained ML model can't be
+ * reached (Python missing, model file missing/corrupt, etc). Same keyword
+ * scoring as before: requires multiple corroborating signals and a clear
+ * margin over the runner-up type, so a single incidental keyword still
+ * can't produce a confident label even in this degraded fallback path.
  */
-export const classifyDocumentType = (rawText) => {
-  if (!rawText || rawText.trim().length < 40) {
-    return { type: 'unknown', confidence: 0, matchedKeywords: [] };
-  }
+const classifyDocumentTypeHeuristic = (rawText) => {
+  const empty = { type: 'unknown', confidence: 0, matchedKeywords: [] };
+  if (!rawText || rawText.trim().length < MIN_TEXT_LENGTH) return empty;
+
   const text = rawText.toLowerCase();
+  const results = {};
 
-  const scores = {};
-  const matched = {};
-
-  for (const [docType, sig] of Object.entries(DOC_TYPE_SIGNATURES)) {
+  for (const [type, sig] of Object.entries(DOC_TYPE_SIGNATURES)) {
     let score = 0;
-    const matches = [];
-
+    const matched = [];
     for (const kw of sig.strong) {
-      if (text.includes(kw.toLowerCase())) {
-        score += 3;
-        matches.push(kw);
-      }
+      if (text.includes(kw)) { score += STRONG_WEIGHT; matched.push(kw); }
     }
-
     for (const kw of sig.weak) {
-      if (text.includes(kw.toLowerCase())) {
-        score += 1;
-        matches.push(kw);
-      }
+      if (text.includes(kw)) { score += WEAK_WEIGHT; matched.push(kw); }
     }
-
-    scores[docType] = score;
-    matched[docType] = matches;
+    results[type] = { score, matched };
   }
 
-  let topDoc = 'unknown';
-  let topScore = 0;
-  let runnerUpScore = 0;
+  const ranked = Object.entries(results).sort((a, b) => b[1].score - a[1].score);
+  const [topType, topResult] = ranked[0];
+  const runnerUpScore = ranked[1] ? ranked[1][1].score : 0;
 
-  for (const [docType, score] of Object.entries(scores)) {
-    if (score > topScore) {
-      runnerUpScore = topScore;
-      topScore = score;
-      topDoc = docType;
-    } else if (score > runnerUpScore) {
-      runnerUpScore = score;
-    }
+  if (topResult.score < MIN_SCORE_TO_CLASSIFY) return empty;
+  if (topResult.score - runnerUpScore < MIN_MARGIN_OVER_RUNNER_UP) {
+    return { type: 'unknown', confidence: 0, matchedKeywords: topResult.matched };
   }
 
-  // Require minimum total score of 6 and lead over runner-up of at least 3
-  if (topScore < 6 || (topScore - runnerUpScore) < 3) {
+  const confidence = Math.min(97, Math.round(55 + (topResult.score - MIN_SCORE_TO_CLASSIFY) * 8));
+  return { type: topType, confidence, matchedKeywords: topResult.matched };
+};
+
+const classifierScriptPath = path.join(projectRoot, 'ml/scripts/predict_doc_type.py');
+
+/**
+ * Classify document type using the trained TF-IDF + Logistic Regression
+ * text classifier (ml/scripts/predict_doc_type.py), trained on synthetic
+ * examples of each real document type PLUS an explicit 'unknown' class
+ * containing text that incidentally overlaps a real keyword out of context
+ * (e.g. a news headline mentioning "university"). This is what lets the
+ * model learn that one incidental word is not evidence of a real document,
+ * rather than relying on a hand-tuned keyword threshold.
+ *
+ * Returns { type, confidence, matchedKeywords } — confidence here reflects
+ * how confident THIS classification decision is (the model's own
+ * predict_proba for the winning class), which is entirely separate from
+ * OCR legibility confidence computed in performOCR(). If the Python model
+ * can't be reached for any reason, falls back to the offline heuristic
+ * above rather than failing the whole upload.
+ */
+export const classifyDocumentType = async (rawText) => {
+  if (!rawText || rawText.trim().length < MIN_TEXT_LENGTH) {
     return { type: 'unknown', confidence: 0, matchedKeywords: [] };
   }
 
-  const confidence = Math.min(97, Math.round(55 + (topScore - 6) * 8));
-
-  return {
-    type: topDoc,
-    confidence,
-    matchedKeywords: matched[topDoc] || []
-  };
+  return new Promise((resolve) => {
+    const payload = JSON.stringify({ text: rawText });
+    execFile('python3', [classifierScriptPath, payload], { cwd: projectRoot, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        console.warn('[Doc Classifier] Python execution warning, using offline fallback:', stderr || error.message);
+        return resolve(classifyDocumentTypeHeuristic(rawText));
+      }
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        resolve({ type: parsed.type || 'unknown', confidence: parsed.confidence || 0, matchedKeywords: [] });
+      } catch (parseErr) {
+        console.warn('[Doc Classifier] Parse error on classifier output, using offline fallback');
+        resolve(classifyDocumentTypeHeuristic(rawText));
+      }
+    });
+  });
 };
 
 /**
@@ -357,7 +387,7 @@ export const performOCR = async (filePath, docKey) => {
     }
   }
 
-  const classification = classifyDocumentType(rawText);
+  const classification = await classifyDocumentType(rawText);
   const extracted = extractFieldsByDocType(docKey, rawText);
 
   return {
