@@ -39,6 +39,9 @@ export const uploadDocument = async (req, res, next) => {
       existingDoc.mimeType = req.file.mimetype;
       existingDoc.ocrStatus = 'pending';
       existingDoc.confidence = 0;
+      existingDoc.classificationConfidence = 0;
+      existingDoc.detectedDocType = 'unknown';
+      existingDoc.matchedKeywords = [];
       existingDoc.mismatches = [];
       existingDoc.verificationStatus = 'needs_review';
       existingDoc.uploadedAt = new Date();
@@ -149,6 +152,9 @@ export const reuploadDocument = async (req, res, next) => {
     doc.ocrStatus = 'pending';
     doc.mismatches = [];
     doc.confidence = 0;
+    doc.classificationConfidence = 0;
+    doc.detectedDocType = 'unknown';
+    doc.matchedKeywords = [];
     doc.verificationStatus = 'needs_review';
     doc.uploadedAt = new Date();
     await doc.save();

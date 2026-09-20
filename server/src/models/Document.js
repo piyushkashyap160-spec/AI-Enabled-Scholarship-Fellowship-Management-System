@@ -55,6 +55,8 @@ const documentSchema = new mongoose.Schema({
     type: String,
     default: 'unknown'
   },
+  classificationConfidence: { type: Number, default: 0 },
+  matchedKeywords: { type: [String], default: [] },
   mismatches: [mismatchSchema],
   verificationStatus: {
     type: String,

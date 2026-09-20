@@ -563,6 +563,8 @@ const seedDatabase = async () => {
           mimeType: 'application/pdf',
           ocrStatus: 'done',
           confidence: 94,
+          classificationConfidence: 91,
+          matchedKeywords: ['scheduled tribe', 'caste certificate', 'sub-divisional magistrate'],
           detectedDocType: 'caste_certificate',
           ocrExtracted: {
             certificate_no: i === 4 ? 'ST/JH/2023/8892' : `ST/${applicant.profile.state.slice(0, 2).toUpperCase()}/2023/${1000 + i}`,
@@ -586,6 +588,8 @@ const seedDatabase = async () => {
           mimeType: 'application/pdf',
           ocrStatus: 'done',
           confidence: 92,
+          classificationConfidence: 89,
+          matchedKeywords: ['income certificate', 'annual income', 'tahsildar'],
           detectedDocType: 'income_certificate',
           ocrExtracted: {
             annual_income: isMismatchCase ? 450000 : applicant.profile.familyIncome,
@@ -612,6 +616,8 @@ const seedDatabase = async () => {
           mimeType: 'application/pdf',
           ocrStatus: 'done',
           confidence: 90,
+          classificationConfidence: 87,
+          matchedKeywords: ['statement of marks', 'percentage', 'semester'],
           detectedDocType: 'marksheet',
           ocrExtracted: {
             percentage: applicant.profile.education.marksPercent,

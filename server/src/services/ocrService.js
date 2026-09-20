@@ -71,55 +71,104 @@ function levenshtein(a, b) {
 }
 
 /**
+ * Format a snake_case key into Title Case
+ */
+export const formatDocLabel = (key) => {
+  if (!key || typeof key !== 'string') return '';
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const DOC_TYPE_SIGNATURES = {
+  caste_certificate: {
+    strong: ['scheduled tribe', 'caste certificate', 'tribe certificate', 'constitution (scheduled tribes)', 'sub-divisional magistrate'],
+    weak: ['tehsildar', 'tahsildar']
+  },
+  income_certificate: {
+    strong: ['income certificate', 'annual income', 'gross income', 'family income'],
+    weak: ['revenue officer', 'tahsildar']
+  },
+  marksheet: {
+    strong: ['statement of marks', 'grade sheet', 'marksheet', 'controller of examinations', 'marks obtained'],
+    weak: ['cgpa', 'semester', 'percentage']
+  },
+  offer_letter: {
+    strong: ['offer letter', 'admission offer', 'letter of acceptance', 'conditional offer', 'unconditional offer'],
+    weak: ['university', 'faculty of', 'tuition fee']
+  },
+  bank_passbook: {
+    strong: ['passbook', 'bank statement', 'ifsc', 'saving bank'],
+    weak: ['account number', 'branch code', 'bank of']
+  },
+  aadhaar: {
+    strong: ['aadhaar', 'unique identification authority of india', 'uidai', 'mera aadhaar'],
+    weak: ['enrolment no']
+  },
+  college_id: {
+    strong: ['student id', 'college id', 'library card'],
+    weak: ['identity card', 'valid upto', 'roll no:']
+  }
+};
+
+/**
  * Classify document type based on keyword signatures in extracted text
  */
 export const classifyDocumentType = (rawText) => {
-  if (!rawText) return 'unknown';
+  if (!rawText || rawText.trim().length < 40) {
+    return { type: 'unknown', confidence: 0, matchedKeywords: [] };
+  }
   const text = rawText.toLowerCase();
 
-  const scores = {
-    caste_certificate: 0,
-    income_certificate: 0,
-    marksheet: 0,
-    offer_letter: 0,
-    bank_passbook: 0,
-    aadhaar: 0,
-    college_id: 0
-  };
+  const scores = {};
+  const matched = {};
 
-  // Keyword rules
-  if (text.includes('scheduled tribe') || text.includes('caste certificate') || text.includes('tribe certificate') || text.includes('tehsildar') || text.includes('sub-divisional magistrate') || text.includes('constitution (scheduled tribes)')) {
-    scores.caste_certificate += 5;
-  }
-  if (text.includes('income certificate') || text.includes('annual income') || text.includes('gross income') || text.includes('family income') || text.includes('tahsildar') || text.includes('revenue officer')) {
-    scores.income_certificate += 5;
-  }
-  if (text.includes('statement of marks') || text.includes('grade sheet') || text.includes('marksheet') || text.includes('cgpa') || text.includes('percentage') || text.includes('semester') || text.includes('controller of examinations') || text.includes('marks obtained')) {
-    scores.marksheet += 5;
-  }
-  if (text.includes('offer letter') || text.includes('admission offer') || text.includes('letter of acceptance') || text.includes('conditional offer') || text.includes('unconditional offer') || text.includes('university') || text.includes('faculty of') || text.includes('tuition fee')) {
-    scores.offer_letter += 5;
-  }
-  if (text.includes('passbook') || text.includes('bank statement') || text.includes('account number') || text.includes('ifsc') || text.includes('branch code') || text.includes('saving bank') || text.includes('bank of')) {
-    scores.bank_passbook += 5;
-  }
-  if (text.includes('aadhaar') || text.includes('unique identification authority of india') || text.includes('uidai') || text.includes('mera aadhaar') || text.includes('enrolment no')) {
-    scores.aadhaar += 5;
-  }
-  if (text.includes('identity card') || text.includes('student id') || text.includes('college id') || text.includes('valid upto') || text.includes('library card') || text.includes('roll no:')) {
-    scores.college_id += 5;
+  for (const [docType, sig] of Object.entries(DOC_TYPE_SIGNATURES)) {
+    let score = 0;
+    const matches = [];
+
+    for (const kw of sig.strong) {
+      if (text.includes(kw.toLowerCase())) {
+        score += 3;
+        matches.push(kw);
+      }
+    }
+
+    for (const kw of sig.weak) {
+      if (text.includes(kw.toLowerCase())) {
+        score += 1;
+        matches.push(kw);
+      }
+    }
+
+    scores[docType] = score;
+    matched[docType] = matches;
   }
 
   let topDoc = 'unknown';
   let topScore = 0;
-  for (const [doc, score] of Object.entries(scores)) {
+  let runnerUpScore = 0;
+
+  for (const [docType, score] of Object.entries(scores)) {
     if (score > topScore) {
+      runnerUpScore = topScore;
       topScore = score;
-      topDoc = doc;
+      topDoc = docType;
+    } else if (score > runnerUpScore) {
+      runnerUpScore = score;
     }
   }
 
-  return topScore >= 3 ? topDoc : 'unknown';
+  // Require minimum total score of 6 and lead over runner-up of at least 3
+  if (topScore < 6 || (topScore - runnerUpScore) < 3) {
+    return { type: 'unknown', confidence: 0, matchedKeywords: [] };
+  }
+
+  const confidence = Math.min(97, Math.round(55 + (topScore - 6) * 8));
+
+  return {
+    type: topDoc,
+    confidence,
+    matchedKeywords: matched[topDoc] || []
+  };
 };
 
 /**
@@ -308,13 +357,15 @@ export const performOCR = async (filePath, docKey) => {
     }
   }
 
-  const detectedDocType = classifyDocumentType(rawText);
+  const classification = classifyDocumentType(rawText);
   const extracted = extractFieldsByDocType(docKey, rawText);
 
   return {
     rawText,
-    confidence,
-    detectedDocType,
+    confidence,                                          // OCR LEGIBILITY only - unrelated to classification
+    detectedDocType: classification.type,
+    classificationConfidence: classification.confidence, // confidence in the type guess itself
+    matchedKeywords: classification.matchedKeywords,
     extracted
   };
 };
@@ -322,19 +373,26 @@ export const performOCR = async (filePath, docKey) => {
 /**
  * Cross check extracted OCR data with applicant's declared profile and application formData
  */
-export const compareDataAndDetectMismatches = (docKey, declaredData, extractedData, detectedDocType, maxAgeMonths = 0) => {
+export const compareDataAndDetectMismatches = (docKey, declaredData, extractedData, detectedDocType, maxAgeMonths = 0, classificationConfidence = 0) => {
   const mismatches = [];
 
+  const CONFIDENT_MISMATCH_THRESHOLD = 65;
+
   // 1. Document Type Classification mismatch check
-  if (detectedDocType !== 'unknown' && detectedDocType !== docKey) {
-    const formatName = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  if (detectedDocType === 'unknown') {
     mismatches.push({
       field: 'document_type',
-      declared: formatName(docKey),
-      extracted: formatName(detectedDocType),
-      severity: 'critical',
-      message: `Uploaded file appears to be a ${formatName(detectedDocType)}, not a ${formatName(docKey)}. Please upload the correct document.`
+      declared: formatDocLabel(docKey),
+      extracted: 'Unrecognized',
+      severity: 'warning',
+      message: `The document type could not be confidently identified from the uploaded file. An officer will manually confirm this is the correct ${formatDocLabel(docKey)}.`
     });
+  } else if (detectedDocType !== docKey) {
+    const severity = classificationConfidence >= CONFIDENT_MISMATCH_THRESHOLD ? 'critical' : 'warning';
+    const message = classificationConfidence >= CONFIDENT_MISMATCH_THRESHOLD
+      ? `Uploaded file appears to be a ${formatDocLabel(detectedDocType)}, not a ${formatDocLabel(docKey)}. Please upload the correct document.`
+      : `Uploaded file may be a ${formatDocLabel(detectedDocType)} rather than a ${formatDocLabel(docKey)}, but this match is low-confidence (${classificationConfidence}%). An officer will manually verify.`;
+    mismatches.push({ field: 'document_type', declared: formatDocLabel(docKey), extracted: formatDocLabel(detectedDocType), severity, message });
   }
 
   // 2. Name check
@@ -481,6 +539,8 @@ export const processDocumentAsync = async (documentId) => {
     doc.ocrRawText = ocrResult.rawText;
     doc.confidence = ocrResult.confidence;
     doc.detectedDocType = ocrResult.detectedDocType;
+    doc.classificationConfidence = ocrResult.classificationConfidence;
+    doc.matchedKeywords = ocrResult.matchedKeywords || [];
     doc.ocrExtracted = ocrResult.extracted;
     doc.ocrStatus = 'done';
 
@@ -501,7 +561,8 @@ export const processDocumentAsync = async (documentId) => {
       declaredData,
       ocrResult.extracted,
       ocrResult.detectedDocType,
-      maxAgeMonths
+      maxAgeMonths,
+      ocrResult.classificationConfidence
     );
 
     // 5. Confidence check (< 60 implies unreadable)
@@ -518,7 +579,8 @@ export const processDocumentAsync = async (documentId) => {
     doc.mismatches = mismatches;
 
     // Determine verification status
-    if (mismatches.length === 0 && ocrResult.confidence >= 75) {
+    const positivelyConfirmed = ocrResult.detectedDocType === doc.docKey;
+    if (mismatches.length === 0 && ocrResult.confidence >= 75 && positivelyConfirmed) {
       doc.verificationStatus = 'auto_ok';
     } else {
       doc.verificationStatus = 'needs_review';
@@ -536,6 +598,8 @@ export const processDocumentAsync = async (documentId) => {
       details: {
         confidence: doc.confidence,
         detectedType: doc.detectedDocType,
+        classificationConfidence: doc.classificationConfidence,
+        matchedKeywords: doc.matchedKeywords,
         extracted: doc.ocrExtracted,
         mismatchesCount: mismatches.length,
         status: doc.verificationStatus

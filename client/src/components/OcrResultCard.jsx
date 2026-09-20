@@ -50,18 +50,33 @@ const OcrResultCard = ({ document: doc, onPreview = null }) => {
           <div className="d-flex align-items-center gap-2">
             <Cpu size={16} className="text-secondary" />
             <span className="small text-muted">Detected Type:</span>
-            <span className="badge bg-secondary">{formatKey(doc.detectedDocType || 'unknown')}</span>
+            <span className="badge bg-secondary">
+              {(!doc.detectedDocType || doc.detectedDocType === 'unknown') ? 'Unrecognized' : formatKey(doc.detectedDocType)}
+            </span>
           </div>
 
-          <div className="d-flex align-items-center gap-2" style={{ width: '220px' }}>
-            <span className="small text-muted text-nowrap">OCR Confidence:</span>
-            <ProgressBar
-              now={doc.confidence || 0}
-              variant={doc.confidence >= 80 ? 'success' : (doc.confidence >= 60 ? 'warning' : 'danger')}
-              label={`${doc.confidence || 0}%`}
-              className="w-100"
-              style={{ height: '18px', fontSize: '0.75rem', fontWeight: 'bold' }}
-            />
+          <div className="d-flex align-items-center gap-3 flex-wrap">
+            <div className="d-flex align-items-center gap-2" style={{ minWidth: '220px' }}>
+              <span className="small text-muted text-nowrap">Document Type Match:</span>
+              <ProgressBar
+                now={doc.classificationConfidence || 0}
+                variant={!doc.classificationConfidence ? 'secondary' : (doc.classificationConfidence >= 80 ? 'success' : (doc.classificationConfidence >= 65 ? 'warning' : 'danger'))}
+                label={!doc.classificationConfidence ? 'N/A' : `${doc.classificationConfidence}%`}
+                className="w-100"
+                style={{ height: '18px', fontSize: '0.75rem', fontWeight: 'bold' }}
+              />
+            </div>
+
+            <div className="d-flex align-items-center gap-2" style={{ minWidth: '180px' }}>
+              <span className="small text-muted text-nowrap">OCR Legibility:</span>
+              <ProgressBar
+                now={doc.confidence || 0}
+                variant={doc.confidence >= 80 ? 'success' : (doc.confidence >= 60 ? 'warning' : 'danger')}
+                label={`${doc.confidence || 0}%`}
+                className="w-100"
+                style={{ height: '18px', fontSize: '0.75rem', fontWeight: 'bold' }}
+              />
+            </div>
           </div>
         </div>
 
