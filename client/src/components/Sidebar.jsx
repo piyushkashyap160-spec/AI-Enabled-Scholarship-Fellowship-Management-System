@@ -18,7 +18,8 @@ import {
   Users,
   BarChart3,
   History,
-  AlertOctagon
+  AlertOctagon,
+  CreditCard
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -99,6 +100,10 @@ const Sidebar = () => {
               <Layers size={18} />
               <span>Selection Workflow</span>
             </NavLink>
+            <NavLink to="/officer/disbursements" className={({ isActive }) => `gov-sidebar-item ${isActive ? 'active' : ''}`}>
+              <CreditCard size={18} />
+              <span>Disbursement Review</span>
+            </NavLink>
           </>
         )}
 
@@ -120,6 +125,10 @@ const Sidebar = () => {
             <NavLink to="/admin/merit" className={({ isActive }) => `gov-sidebar-item ${isActive ? 'active' : ''}`}>
               <Award size={18} />
               <span>Publish Merit List</span>
+            </NavLink>
+            <NavLink to="/admin/disbursements" className={({ isActive }) => `gov-sidebar-item ${isActive ? 'active' : ''}`}>
+              <CreditCard size={18} />
+              <span>Disbursement Review</span>
             </NavLink>
             <NavLink to="/admin/anomalies" className={({ isActive }) => `gov-sidebar-item ${isActive ? 'active' : ''}`}>
               <AlertOctagon size={18} className="text-danger" />

@@ -25,6 +25,34 @@ export const getMyDisbursements = async (req, res, next) => {
   }
 };
 
+export const getPendingDisbursements = async (req, res, next) => {
+  try {
+    const disbursements = await Disbursement.find({
+      status: { $ne: 'released' },
+      $or: [
+        { progressReportPath: { $ne: null } },
+        { guideApproved: true }
+      ]
+    })
+      .populate({
+        path: 'applicationId',
+        populate: [
+          { path: 'applicantId', select: 'name email phone profile' },
+          { path: 'schemeId', select: 'name code stipendAmountPerYear' }
+        ]
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: disbursements.length,
+      disbursements
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const uploadProgressReport = async (req, res, next) => {
   try {
     const { id } = req.params; // disbursementId

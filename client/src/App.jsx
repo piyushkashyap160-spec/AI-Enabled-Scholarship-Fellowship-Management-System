@@ -40,6 +40,7 @@ import FlaggedDocuments from './pages/verifier/FlaggedDocuments';
 import OfficerScrutiny from './pages/officer/OfficerScrutiny';
 import MeritList from './pages/officer/MeritList';
 import SelectionWorkflow from './pages/officer/SelectionWorkflow';
+import DisbursementReview from './pages/officer/DisbursementReview';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -196,6 +197,14 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/officer/disbursements"
+                  element={
+                    <ProtectedRoute allowedRoles={['officer', 'admin']}>
+                      <DisbursementReview />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Admin Routes */}
                 <Route
@@ -227,6 +236,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['admin']}>
                       <MeritList />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/disbursements"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'officer']}>
+                      <DisbursementReview />
                     </ProtectedRoute>
                   }
                 />
