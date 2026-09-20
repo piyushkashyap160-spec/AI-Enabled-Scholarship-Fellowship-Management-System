@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Button, Form, Table, Spinner, ProgressBar } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Button, Form, Table, Spinner, ProgressBar, Alert } from 'react-bootstrap';
 import axiosClient from '../../api/axiosClient';
 import Sidebar from '../../components/Sidebar';
-import { Award, ListFilter, Users, CheckCircle, Clock } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
+import { Award, ListFilter, Users, CheckCircle, Clock, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const MeritList = () => {
@@ -11,6 +12,10 @@ const MeritList = () => {
   const [selectedSchemeId, setSelectedSchemeId] = useState('');
   const [meritData, setMeritData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(null);
+  const [publishError, setPublishError] = useState(null);
 
   useEffect(() => {
     const fetchSchemes = async () => {
@@ -25,26 +30,51 @@ const MeritList = () => {
     fetchSchemes();
   }, []);
 
-  useEffect(() => {
+  const fetchMerit = async () => {
     if (!selectedSchemeId) return;
-    const fetchMerit = async () => {
-      setLoading(true);
-      try {
-        const endpoint = user?.role === 'officer'
-          ? `/officer/merit/${selectedSchemeId}`
-          : `/admin/merit/${selectedSchemeId}`;
-        const res = await axiosClient.get(endpoint);
-        if (res.data.success) {
-          setMeritData(res.data);
-        }
-      } catch (e) {
-        console.error('Failed to load merit list');
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    try {
+      const endpoint = user?.role === 'officer'
+        ? `/officer/merit/${selectedSchemeId}`
+        : `/admin/merit/${selectedSchemeId}`;
+      const res = await axiosClient.get(endpoint);
+      if (res.data.success) {
+        setMeritData(res.data);
       }
-    };
+    } catch (e) {
+      console.error('Failed to load merit list');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchMerit();
   }, [selectedSchemeId, user?.role]);
+
+  const handlePublishMerit = async () => {
+    if (!selectedSchemeId) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const res = await axiosClient.post(`/admin/merit/${selectedSchemeId}/publish`);
+      if (res.data.success) {
+        setPublishSuccess(res.data.message || 'Official merit list published successfully.');
+        setShowConfirmModal(false);
+        await fetchMerit();
+      }
+    } catch (err) {
+      setPublishError(err.response?.data?.message || 'Failed to publish merit list.');
+      setShowConfirmModal(false);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const isAlreadyPublished = Boolean(
+    meritData?.provisionalList?.length > 0 &&
+    meritData.provisionalList.every(item => item.application?.status === 'SELECTED')
+  );
 
   return (
     <Container fluid className="py-4 px-lg-4">
@@ -106,12 +136,47 @@ const MeritList = () => {
                 </Row>
               </Card>
 
+              {/* Alert Banners for Publish */}
+              {publishSuccess && (
+                <Alert variant="success" dismissible onClose={() => setPublishSuccess(null)} className="mb-3 py-2 px-3 small">
+                  {publishSuccess}
+                </Alert>
+              )}
+              {publishError && (
+                <Alert variant="danger" dismissible onClose={() => setPublishError(null)} className="mb-3 py-2 px-3 small">
+                  {publishError}
+                </Alert>
+              )}
+
               {/* Provisional Selected Merit List */}
               <Card className="gov-card p-3 mb-4 border">
-                <h5 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                  <CheckCircle size={20} className="text-success" />
-                  <span>Provisional Merit Selection ({meritData.provisionalList?.length || 0} Candidates)</span>
-                </h5>
+                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                  <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <CheckCircle size={20} className="text-success" />
+                    <span>Provisional Merit Selection ({meritData.provisionalList?.length || 0} Candidates)</span>
+                  </h5>
+
+                  {user?.role === 'admin' && (
+                    <div>
+                      {isAlreadyPublished ? (
+                        <Badge bg="success" className="py-2 px-3 fs-6 d-inline-flex align-items-center gap-1">
+                          <CheckCircle size={15} /> Official Merit Published
+                        </Badge>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="fw-bold d-inline-flex align-items-center gap-1"
+                          onClick={() => setShowConfirmModal(true)}
+                          disabled={publishing || meritData.provisionalList?.length === 0}
+                        >
+                          {publishing ? <Spinner animation="border" size="sm" /> : <Send size={15} />}
+                          <span>Publish Merit List</span>
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="table-responsive">
                   <Table bordered hover size="sm" className="gov-table small align-middle mb-0">
@@ -199,6 +264,19 @@ const MeritList = () => {
           )}
         </Col>
       </Row>
+
+      {user?.role === 'admin' && (
+        <ConfirmModal
+          show={showConfirmModal}
+          onHide={() => setShowConfirmModal(false)}
+          onConfirm={handlePublishMerit}
+          title="Confirm Merit List Publication"
+          message="Are you sure you want to publish the official merit list for this scheme? This action is irreversible for this scheme and will transition selected candidates to Selected/Waitlisted status and generate disbursement milestones."
+          confirmText="Publish Merit List"
+          confirmVariant="primary"
+          isProcessing={publishing}
+        />
+      )}
     </Container>
   );
 };
