@@ -3,8 +3,10 @@ import { Container, Row, Col, Card, Badge, Button, Form, Table, Spinner, Progres
 import axiosClient from '../../api/axiosClient';
 import Sidebar from '../../components/Sidebar';
 import { Award, ListFilter, Users, CheckCircle, Clock } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const MeritList = () => {
+  const { user } = useAuth();
   const [schemes, setSchemes] = useState([]);
   const [selectedSchemeId, setSelectedSchemeId] = useState('');
   const [meritData, setMeritData] = useState(null);
@@ -28,7 +30,10 @@ const MeritList = () => {
     const fetchMerit = async () => {
       setLoading(true);
       try {
-        const res = await axiosClient.get(`/admin/merit/${selectedSchemeId}`);
+        const endpoint = user?.role === 'officer'
+          ? `/officer/merit/${selectedSchemeId}`
+          : `/admin/merit/${selectedSchemeId}`;
+        const res = await axiosClient.get(endpoint);
         if (res.data.success) {
           setMeritData(res.data);
         }
@@ -39,7 +44,7 @@ const MeritList = () => {
       }
     };
     fetchMerit();
-  }, [selectedSchemeId]);
+  }, [selectedSchemeId, user?.role]);
 
   return (
     <Container fluid className="py-4 px-lg-4">
