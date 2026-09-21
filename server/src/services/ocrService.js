@@ -414,14 +414,14 @@ export const compareDataAndDetectMismatches = (docKey, declaredData, extractedDa
       field: 'document_type',
       declared: formatDocLabel(docKey),
       extracted: 'Unrecognized',
-      severity: 'warning',
-      message: `The document type could not be confidently identified from the uploaded file. An officer will manually confirm this is the correct ${formatDocLabel(docKey)}.`
+      severity: 'critical',
+      message: 'Document type could not be confidently identified from the uploaded file.'
     });
   } else if (detectedDocType !== docKey) {
-    const severity = classificationConfidence >= CONFIDENT_MISMATCH_THRESHOLD ? 'critical' : 'warning';
+    const severity = 'critical';
     const message = classificationConfidence >= CONFIDENT_MISMATCH_THRESHOLD
       ? `Uploaded file appears to be a ${formatDocLabel(detectedDocType)}, not a ${formatDocLabel(docKey)}. Please upload the correct document.`
-      : `Uploaded file may be a ${formatDocLabel(detectedDocType)} rather than a ${formatDocLabel(docKey)}, but this match is low-confidence (${classificationConfidence}%). An officer will manually verify.`;
+      : `Uploaded file may be a ${formatDocLabel(detectedDocType)} rather than a ${formatDocLabel(docKey)} (match confidence: ${classificationConfidence}%).`;
     mismatches.push({ field: 'document_type', declared: formatDocLabel(docKey), extracted: formatDocLabel(detectedDocType), severity, message });
   }
 
@@ -643,21 +643,37 @@ export const processDocumentAsync = async (documentId) => {
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7); // 7 days grace period
 
-      const deficiency = await Deficiency.create({
+      let deficiency = await Deficiency.findOne({
         applicationId: application._id,
         docKey: doc.docKey,
-        reason,
-        raisedBy: 'AI_OCR_ENGINE',
-        dueDate,
         status: 'open'
       });
+
+      if (deficiency) {
+        deficiency.reason = reason;
+        deficiency.documentId = doc._id;
+        deficiency.deficiencyType = 'ai_discrepancy';
+        deficiency.dueDate = dueDate;
+        await deficiency.save();
+      } else {
+        deficiency = await Deficiency.create({
+          applicationId: application._id,
+          documentId: doc._id,
+          docKey: doc.docKey,
+          reason,
+          deficiencyType: 'ai_discrepancy',
+          raisedBy: 'AI_OCR_ENGINE',
+          dueDate,
+          status: 'open'
+        });
+      }
 
       // Update Application stage to DEFICIENT
       application.status = 'DEFICIENT';
       application.stageHistory.push({
         stage: 'DEFICIENT',
         by: 'AI OCR Engine',
-        remark: `Deficiency raised for ${doc.docKey}: ${reason}`
+        remark: `Deficiency raised for ${formatDocLabel(doc.docKey)}: ${reason}`
       });
       await application.save();
 
@@ -665,28 +681,55 @@ export const processDocumentAsync = async (documentId) => {
       await sendNotification({
         userId: applicant._id,
         type: 'DEFICIENCY_RAISED',
-        subject: `Deficiency Notice: Action Required for ${reqDocConfig.label || doc.docKey}`,
-        body: `Your uploaded ${reqDocConfig.label || doc.docKey} requires correction: ${reason}. Please re-upload within 7 days.`,
+        subject: `Deficiency Notice: Action Required for ${reqDocConfig.label || formatDocLabel(doc.docKey)}`,
+        body: `Your uploaded ${reqDocConfig.label || formatDocLabel(doc.docKey)} requires correction: ${reason}. Please re-upload within 7 days.`,
         link: `/applicant/deficiencies`
       });
     } else {
-      // Check if all required documents for the application are uploaded and verified
-      const allDocs = await Document.find({ applicationId: application._id });
+      // If critical mismatches are 0 (clean initial upload or valid re-upload)
+      // Resolve any previous open deficiency for this docKey
+      await Deficiency.updateMany(
+        { applicationId: application._id, docKey: doc.docKey, status: 'open' },
+        { status: 'resolved', resolvedAt: new Date(), reuploadedDocId: doc._id }
+      );
+
+      // Check if all required documents for the application are uploaded (using active current versions)
+      const allDocs = await Document.find({ applicationId: application._id, isCurrent: true });
       const reqKeys = scheme?.requiredDocuments?.map(d => d.key) || [];
       const uploadedKeys = allDocs.map(d => d.docKey);
       const allUploaded = reqKeys.every(k => uploadedKeys.includes(k));
 
-      if (allUploaded && application.status === 'OCR_PROCESSING') {
-        const hasNeedsReview = allDocs.some(d => d.verificationStatus === 'needs_review');
-        application.status = hasNeedsReview ? 'UNDER_VERIFICATION' : 'AUTO_VERIFIED';
-        application.stageHistory.push({
-          stage: application.status,
-          by: 'AI OCR Engine',
-          remark: hasNeedsReview
-            ? 'All documents processed; flagged items queued for Verifier review.'
-            : 'All documents auto-verified with high confidence.'
-        });
-        await application.save();
+      // Check remaining open deficiencies across this application
+      const remainingOpen = await Deficiency.countDocuments({
+        applicationId: application._id,
+        status: 'open'
+      });
+
+      if (remainingOpen === 0) {
+        if (application.status === 'DEFICIENT') {
+          application.status = 'UNDER_VERIFICATION';
+          application.stageHistory.push({
+            stage: 'UNDER_VERIFICATION',
+            by: 'AI OCR Engine',
+            remark: doc.version > 1
+              ? `Replacement ${formatDocLabel(doc.docKey)} (v${doc.version}) verified; all deficiencies resolved and returned to Verifier queue.`
+              : 'Deficiencies resolved; returned to Verifier review queue.'
+          });
+          await application.save();
+        } else if (allUploaded) {
+          const hasNeedsReview = allDocs.some(d => d.verificationStatus === 'needs_review');
+          application.status = hasNeedsReview ? 'UNDER_VERIFICATION' : 'AUTO_VERIFIED';
+          application.stageHistory.push({
+            stage: application.status,
+            by: 'AI OCR Engine',
+            remark: hasNeedsReview
+              ? (doc.version > 1
+                  ? `Replacement ${formatDocLabel(doc.docKey)} (v${doc.version}) verified; returned to Verifier queue.`
+                  : 'All documents processed; flagged items queued for Verifier review.')
+              : 'All documents auto-verified with high confidence.'
+          });
+          await application.save();
+        }
       }
     }
   } catch (error) {

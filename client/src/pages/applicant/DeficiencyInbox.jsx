@@ -3,7 +3,8 @@ import { Container, Row, Col, Card, Badge, Button, Modal, Spinner, Alert } from 
 import axiosClient from '../../api/axiosClient';
 import Sidebar from '../../components/Sidebar';
 import DocumentUploader from '../../components/DocumentUploader';
-import { AlertTriangle, CheckCircle, UploadCloud, Clock, Calendar, RefreshCw } from 'lucide-react';
+import DocumentPreviewModal from '../../components/DocumentPreviewModal';
+import { AlertTriangle, CheckCircle, UploadCloud, Clock, Calendar, RefreshCw, Eye } from 'lucide-react';
 
 const DeficiencyInbox = () => {
   const [applications, setApplications] = useState([]);
@@ -12,6 +13,10 @@ const DeficiencyInbox = () => {
   const [selectedDeficiency, setSelectedDeficiency] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
+
+  // Document Preview Modal State
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const fetchDeficiencies = async () => {
     try {
@@ -27,11 +32,19 @@ const DeficiencyInbox = () => {
         let allDefs = [];
         appDetails.forEach(d => {
           if (d.data.success && d.data.deficiencies) {
-            const enriched = d.data.deficiencies.map(def => ({
-              ...def,
-              applicationNo: d.data.application?.applicationNo,
-              schemeName: d.data.application?.schemeId?.name
-            }));
+            const enriched = d.data.deficiencies.map(def => {
+              const currentDoc = d.data.documents?.find(doc => 
+                (def.documentId && (doc._id === def.documentId || doc._id === def.documentId?._id)) || 
+                doc.docKey === def.docKey
+              );
+              return {
+                ...def,
+                applicationNo: d.data.application?.applicationNo,
+                schemeName: d.data.application?.schemeId?.name,
+                applicationId: d.data.application?._id,
+                currentDocument: currentDoc
+              };
+            });
             allDefs = [...allDefs, ...enriched];
           }
         });
@@ -135,7 +148,20 @@ const DeficiencyInbox = () => {
                             </div>
                           </div>
 
-                          <div className="d-flex justify-content-end">
+                          <div className="d-flex justify-content-end gap-2">
+                            {def.currentDocument && (
+                              <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                className="fw-semibold px-3 d-flex align-items-center gap-1.5"
+                                onClick={() => {
+                                  setPreviewDoc(def.currentDocument);
+                                  setShowPreviewModal(true);
+                                }}
+                              >
+                                <Eye size={16} /> View Existing Document
+                              </Button>
+                            )}
                             <Button
                               variant="gov-primary"
                               size="sm"
@@ -200,6 +226,7 @@ const DeficiencyInbox = () => {
                     docKey={selectedDeficiency?.docKey}
                     label={`Replacement ${selectedDeficiency?.docKey?.replace(/_/g, ' ')}`}
                     isReupload={true}
+                    currentDoc={selectedDeficiency?.currentDocument}
                     deficiencyId={selectedDeficiency?._id}
                     onUploadSuccess={handleReuploadComplete}
                   />
@@ -207,6 +234,13 @@ const DeficiencyInbox = () => {
               )}
             </Modal.Body>
           </Modal>
+
+          {/* Document Preview Modal */}
+          <DocumentPreviewModal
+            show={showPreviewModal}
+            onHide={() => setShowPreviewModal(false)}
+            document={previewDoc}
+          />
         </Col>
       </Row>
     </Container>

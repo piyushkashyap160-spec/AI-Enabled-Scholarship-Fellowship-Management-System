@@ -89,6 +89,28 @@ const documentSchema = new mongoose.Schema({
   uploadedAt: {
     type: Date,
     default: Date.now
+  },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  version: {
+    type: Number,
+    default: 1
+  },
+  isCurrent: {
+    type: Boolean,
+    default: true
+  },
+  previousDocId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Document',
+    default: null
+  },
+  reuploadReason: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

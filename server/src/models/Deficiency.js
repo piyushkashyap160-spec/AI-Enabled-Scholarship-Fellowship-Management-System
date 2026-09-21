@@ -6,9 +6,19 @@ const deficiencySchema = new mongoose.Schema({
     ref: 'Application',
     required: true
   },
+  documentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Document',
+    default: null
+  },
   docKey: {
     type: String,
     required: true
+  },
+  deficiencyType: {
+    type: String,
+    enum: ['ai_discrepancy', 'verifier_rejection', 'clarity_issue', 'expired_document', 'other'],
+    default: 'ai_discrepancy'
   },
   reason: {
     type: String,

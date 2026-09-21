@@ -247,8 +247,8 @@ export const getApplicationById = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const documents = await Document.find({ applicationId: id }).sort({ createdAt: 1 });
-    const deficiencies = await Deficiency.find({ applicationId: id }).sort({ createdAt: -1 });
+    const documents = await Document.find({ applicationId: id }).populate('previousDocId').sort({ createdAt: 1 });
+    const deficiencies = await Deficiency.find({ applicationId: id }).populate('documentId').sort({ createdAt: -1 });
 
     res.json({
       success: true,

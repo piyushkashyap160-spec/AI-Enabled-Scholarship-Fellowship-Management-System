@@ -27,8 +27,9 @@ const ReviewApplication = () => {
     setShowPreviewModal(true);
   };
 
-  // Deficiency Modal State
+  // Deficiency & Rejection Modal State
   const [showDeficiencyModal, setShowDeficiencyModal] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState(null);
   const [selectedDocKey, setSelectedDocKey] = useState('');
   const [deficiencyReason, setDeficiencyReason] = useState('');
   const [deficiencyDueDays, setDeficiencyDueDays] = useState(7);
@@ -50,14 +51,29 @@ const ReviewApplication = () => {
     fetchDetails();
   }, [id]);
 
+  const handleOpenRejectModal = (doc) => {
+    setSelectedDoc(doc);
+    setSelectedDocKey(doc.docKey);
+    // Suggest first critical mismatch if available
+    const critical = doc.mismatches?.find(m => m.severity === 'critical');
+    setDeficiencyReason(critical ? critical.message : (doc.officerRemark || ''));
+    setShowDeficiencyModal(true);
+  };
+
   const handleDocDecision = async (docId, decision) => {
+    if (decision === 'rejected') {
+      const targetDoc = documents.find(d => d._id === docId);
+      if (targetDoc) {
+        handleOpenRejectModal(targetDoc);
+        return;
+      }
+    }
+
     setActionLoading(true);
     setSuccessMsg(null);
     setErrorMsg(null);
 
-    const remark = decision === 'approved'
-      ? 'Document verified and approved by Verifier.'
-      : 'Document rejected due to discrepancies in OCR verification.';
+    const remark = 'Document verified and approved by Verifier.';
 
     try {
       const res = await axiosClient.post(`/verifier/documents/${docId}/decision`, {
@@ -82,16 +98,26 @@ const ReviewApplication = () => {
 
     setActionLoading(true);
     try {
-      const res = await axiosClient.post(`/verifier/applications/${id}/deficiency`, {
-        docKey: selectedDocKey,
-        reason: deficiencyReason,
-        dueDays: Number(deficiencyDueDays)
-      });
+      let res;
+      if (selectedDoc?._id) {
+        res = await axiosClient.post(`/verifier/documents/${selectedDoc._id}/decision`, {
+          decision: 'rejected',
+          remark: deficiencyReason,
+          dueDays: Number(deficiencyDueDays)
+        });
+      } else {
+        res = await axiosClient.post(`/verifier/applications/${id}/deficiency`, {
+          docKey: selectedDocKey,
+          reason: deficiencyReason,
+          dueDays: Number(deficiencyDueDays)
+        });
+      }
 
       if (res.data.success) {
         setShowDeficiencyModal(false);
         setDeficiencyReason('');
-        setSuccessMsg('Deficiency raised and notification dispatched to applicant.');
+        setSelectedDoc(null);
+        setSuccessMsg('Deficiency notice dispatched to applicant and document flagged for re-upload.');
         fetchDetails();
       }
     } catch (err) {
@@ -186,7 +212,7 @@ const ReviewApplication = () => {
                       Verification Status: <strong className="text-uppercase">{doc.verificationStatus}</strong>
                     </div>
 
-                    <div className="d-flex gap-2">
+                    <div className="d-flex flex-wrap gap-2">
                       <Button
                         variant="outline-primary"
                         size="sm"
@@ -201,32 +227,29 @@ const ReviewApplication = () => {
                         size="sm"
                         className="fw-semibold d-inline-flex align-items-center gap-1"
                         onClick={() => handleDocDecision(doc._id, 'approved')}
-                        disabled={actionLoading}
+                        disabled={actionLoading || doc.verificationStatus === 'approved'}
                       >
-                        <CheckCircle2 size={15} /> Approve Document
-                      </Button>
-
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        className="fw-semibold d-inline-flex align-items-center gap-1"
-                        onClick={() => handleDocDecision(doc._id, 'rejected')}
-                        disabled={actionLoading}
-                      >
-                        <XCircle size={15} /> Reject
+                        <CheckCircle2 size={15} /> Approve
                       </Button>
 
                       <Button
                         variant="warning"
                         size="sm"
                         className="fw-bold text-dark d-inline-flex align-items-center gap-1"
-                        onClick={() => {
-                          setSelectedDocKey(doc.docKey);
-                          setShowDeficiencyModal(true);
-                        }}
+                        onClick={() => handleOpenRejectModal(doc)}
                         disabled={actionLoading}
                       >
-                        <AlertTriangle size={15} /> Raise Deficiency
+                        <AlertTriangle size={15} /> Request Re-upload
+                      </Button>
+
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        className="fw-semibold d-inline-flex align-items-center gap-1"
+                        onClick={() => handleOpenRejectModal(doc)}
+                        disabled={actionLoading}
+                      >
+                        <XCircle size={15} /> Reject
                       </Button>
                     </div>
                   </div>
@@ -235,31 +258,55 @@ const ReviewApplication = () => {
             ))}
           </div>
 
-          {/* Raise Deficiency Modal */}
-          <Modal show={showDeficiencyModal} onHide={() => setShowDeficiencyModal(false)} centered>
+          {/* Reject / Request Re-upload Modal */}
+          <Modal show={showDeficiencyModal} onHide={() => { setShowDeficiencyModal(false); setSelectedDoc(null); }} centered size="lg">
             <Modal.Header closeButton className="bg-light">
-              <Modal.Title className="fs-6 fw-bold text-warning d-flex align-items-center gap-2">
+              <Modal.Title className="fs-6 fw-bold text-danger d-flex align-items-center gap-2">
                 <AlertTriangle size={18} />
-                <span>Raise Official Deficiency Notice</span>
+                <span>Reject Document & Request Re-upload</span>
               </Modal.Title>
             </Modal.Header>
-            <Modal.Body className="p-3">
+            <Modal.Body className="p-4">
               <Form onSubmit={handleRaiseDeficiency}>
                 <Form.Group className="mb-3">
                   <Form.Label className="small fw-bold">Target Document</Form.Label>
-                  <Form.Control type="text" value={selectedDocKey} disabled className="bg-light" />
+                  <Form.Control type="text" value={selectedDoc ? `${selectedDoc.docKey} (v${selectedDoc.version || 1} - ${selectedDoc.originalName || 'file'})` : selectedDocKey} disabled className="bg-light" />
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label className="small fw-bold">Deficiency Reason / Required Rectification</Form.Label>
+                  <Form.Label className="small fw-bold">Select Standard Reason (or type below):</Form.Label>
+                  <div className="d-flex flex-wrap gap-2 mb-2">
+                    {[
+                      'Wrong document uploaded',
+                      'Document is unreadable or blurry',
+                      'Certificate details do not match application data',
+                      'Invalid or expired document',
+                      'AI verification discrepancy confirmed'
+                    ].map((preset) => (
+                      <Button
+                        key={preset}
+                        type="button"
+                        variant={deficiencyReason === preset ? 'danger' : 'outline-secondary'}
+                        size="sm"
+                        className="rounded-pill py-1 px-3 text-start"
+                        style={{ fontSize: '0.75rem' }}
+                        onClick={() => setDeficiencyReason(preset)}
+                      >
+                        {preset}
+                      </Button>
+                    ))}
+                  </div>
                   <Form.Control
                     as="textarea"
                     rows={3}
-                    placeholder="e.g. Income certificate is older than 12 months. Please upload latest certificate issued by Tahsildar."
+                    placeholder="Provide specific instructions to the applicant regarding what needs to be fixed or re-uploaded..."
                     value={deficiencyReason}
                     onChange={(e) => setDeficiencyReason(e.target.value)}
                     required
                   />
+                  <Form.Text className="text-muted small">
+                    This remark will be sent to the applicant via in-app notification and email.
+                  </Form.Text>
                 </Form.Group>
 
                 <Form.Group className="mb-4">
@@ -275,11 +322,11 @@ const ReviewApplication = () => {
                 </Form.Group>
 
                 <div className="d-flex justify-content-end gap-2">
-                  <Button variant="outline-secondary" size="sm" onClick={() => setShowDeficiencyModal(false)}>
+                  <Button variant="outline-secondary" size="sm" onClick={() => { setShowDeficiencyModal(false); setSelectedDoc(null); }}>
                     Cancel
                   </Button>
-                  <Button type="submit" variant="warning" size="sm" className="fw-bold text-dark" disabled={actionLoading}>
-                    {actionLoading ? <Spinner size="sm" animation="border" /> : 'Raise & Notify Applicant'}
+                  <Button type="submit" variant="danger" size="sm" className="fw-bold" disabled={actionLoading}>
+                    {actionLoading ? <Spinner size="sm" animation="border" /> : 'Confirm Rejection & Notify Applicant'}
                   </Button>
                 </div>
               </Form>

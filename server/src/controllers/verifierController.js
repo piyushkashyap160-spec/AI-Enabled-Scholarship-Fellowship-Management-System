@@ -92,6 +92,10 @@ export const documentDecision = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Decision must be 'approved' or 'rejected'." });
     }
 
+    if (decision === 'rejected' && (!remark || !remark.trim())) {
+      return res.status(400).json({ success: false, message: 'A rejection or deficiency reason is required.' });
+    }
+
     const doc = await Document.findById(id).populate({
       path: 'applicationId',
       populate: { path: 'applicantId' }
@@ -99,6 +103,11 @@ export const documentDecision = async (req, res, next) => {
 
     if (!doc) {
       return res.status(404).json({ success: false, message: 'Document not found.' });
+    }
+
+    const app = doc.applicationId;
+    if (!app) {
+      return res.status(404).json({ success: false, message: 'Associated application not found.' });
     }
 
     doc.verificationStatus = decision;
@@ -110,33 +119,103 @@ export const documentDecision = async (req, res, next) => {
     // Record Verification Log
     await VerificationLog.create({
       documentId: doc._id,
-      applicationId: doc.applicationId._id,
+      applicationId: app._id,
       action: decision === 'approved' ? 'DOCUMENT_APPROVED' : 'DOCUMENT_REJECTED',
-      actorType: 'VERIFIER',
+      actorType: req.user.role === 'officer' ? 'OFFICER' : 'VERIFIER',
       actorId: req.user._id,
       actorName: req.user.name,
       details: {
         docKey: doc.docKey,
+        version: doc.version,
         remark,
         confidence: doc.confidence,
         mismatches: doc.mismatches
       }
     });
 
-    // Check application overall documents status
-    const allDocs = await Document.find({ applicationId: doc.applicationId._id });
-    const allApproved = allDocs.length > 0 && allDocs.every(d => ['approved', 'auto_ok'].includes(d.verificationStatus));
-    const anyRejected = allDocs.some(d => d.verificationStatus === 'rejected');
+    // Record Audit Log
+    await AuditLog.create({
+      actorId: req.user._id,
+      actorName: req.user.name,
+      actorRole: req.user.role,
+      action: decision === 'approved' ? 'DOCUMENT_APPROVED' : 'DOCUMENT_REJECTED',
+      entityType: 'Document',
+      entityId: doc._id.toString(),
+      reason: remark || `Document marked as ${decision}`,
+      ip: req.ip || '127.0.0.1'
+    });
 
-    const app = doc.applicationId;
-    if (allApproved && ['UNDER_VERIFICATION', 'AUTO_VERIFIED', 'OCR_PROCESSING'].includes(app.status)) {
-      app.status = 'UNDER_SCRUTINY';
+    if (decision === 'rejected') {
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 7); // 7-day standard grace period
+
+      // Create or update open deficiency
+      let deficiency = await Deficiency.findOne({
+        applicationId: app._id,
+        docKey: doc.docKey,
+        status: 'open'
+      });
+
+      if (deficiency) {
+        deficiency.reason = remark;
+        deficiency.documentId = doc._id;
+        deficiency.deficiencyType = 'verifier_rejection';
+        deficiency.raisedBy = req.user.name;
+        deficiency.dueDate = dueDate;
+        await deficiency.save();
+      } else {
+        deficiency = await Deficiency.create({
+          applicationId: app._id,
+          documentId: doc._id,
+          docKey: doc.docKey,
+          reason: remark,
+          deficiencyType: 'verifier_rejection',
+          raisedBy: req.user.name,
+          dueDate,
+          status: 'open'
+        });
+      }
+
+      // Mark application status as DEFICIENT (Action Required)
+      app.status = 'DEFICIENT';
       app.stageHistory.push({
-        stage: 'UNDER_SCRUTINY',
+        stage: 'DEFICIENT',
         by: req.user.name,
-        remark: 'All uploaded documents verified and approved. Moved to Officer Scrutiny.'
+        remark: `Document ${doc.docKey} rejected by Verifier: ${remark}`
       });
       await app.save();
+
+      // Dispatch notification to applicant
+      if (app.applicantId?._id) {
+        await sendNotification({
+          userId: app.applicantId._id,
+          type: 'DEFICIENCY_RAISED',
+          subject: `Action Required: Document Rejected - ${doc.docKey}`,
+          body: `Verifier ${req.user.name} has rejected your uploaded ${doc.docKey} (Reason: "${remark}"). Please submit a corrected replacement file.`,
+          link: '/applicant/deficiencies'
+        });
+      }
+    } else if (decision === 'approved') {
+      // Resolve any open deficiency for this docKey
+      await Deficiency.updateMany(
+        { applicationId: app._id, docKey: doc.docKey, status: 'open' },
+        { status: 'resolved', resolvedAt: new Date(), reuploadedDocId: doc._id }
+      );
+
+      // Check if all required current documents are approved and no open deficiencies remain
+      const allCurrentDocs = await Document.find({ applicationId: app._id, isCurrent: true });
+      const openDefsCount = await Deficiency.countDocuments({ applicationId: app._id, status: 'open' });
+      const allApproved = allCurrentDocs.length > 0 && allCurrentDocs.every(d => ['approved', 'auto_ok'].includes(d.verificationStatus));
+
+      if (allApproved && openDefsCount === 0 && ['UNDER_VERIFICATION', 'AUTO_VERIFIED', 'OCR_PROCESSING', 'DEFICIENT'].includes(app.status)) {
+        app.status = 'UNDER_SCRUTINY';
+        app.stageHistory.push({
+          stage: 'UNDER_SCRUTINY',
+          by: req.user.name,
+          remark: 'All uploaded documents verified and approved. Moved to Officer Scrutiny.'
+        });
+        await app.save();
+      }
     }
 
     res.json({
@@ -167,17 +246,20 @@ export const raiseDeficiency = async (req, res, next) => {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + Number(dueDays));
 
+    const doc = await Document.findOne({ applicationId: id, docKey, isCurrent: true }) || await Document.findOne({ applicationId: id, docKey });
+
     const deficiency = await Deficiency.create({
       applicationId: id,
+      documentId: doc?._id || null,
       docKey,
       reason,
+      deficiencyType: 'verifier_rejection',
       raisedBy: req.user.name,
       dueDate,
       status: 'open'
     });
 
     // Update document status
-    const doc = await Document.findOne({ applicationId: id, docKey });
     if (doc) {
       doc.verificationStatus = 'rejected';
       doc.officerRemark = reason;

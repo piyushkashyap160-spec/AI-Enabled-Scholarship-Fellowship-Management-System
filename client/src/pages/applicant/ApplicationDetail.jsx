@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, Table } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, Table, Modal } from 'react-bootstrap';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import axiosClient from '../../api/axiosClient';
@@ -9,7 +9,8 @@ import StatusBadge from '../../components/StatusBadge';
 import OcrResultCard from '../../components/OcrResultCard';
 import EligibilityResultCard from '../../components/EligibilityResultCard';
 import DocumentPreviewModal from '../../components/DocumentPreviewModal';
-import { FileText, ArrowLeft, Award, ShieldCheck, AlertTriangle, CheckCircle2, History } from 'lucide-react';
+import DocumentUploader from '../../components/DocumentUploader';
+import { FileText, ArrowLeft, Award, ShieldCheck, AlertTriangle, CheckCircle2, History, Eye, UploadCloud } from 'lucide-react';
 
 const ApplicationDetail = () => {
   const { id } = useParams();
@@ -24,33 +25,55 @@ const ApplicationDetail = () => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Re-upload Modal State
+  const [showReuploadModal, setShowReuploadModal] = useState(false);
+  const [reuploadTarget, setReuploadTarget] = useState(null);
+  const [reuploadSuccessMsg, setReuploadSuccessMsg] = useState(null);
+
   const handleOpenPreview = (doc) => {
     setPreviewDoc(doc);
     setShowPreviewModal(true);
   };
 
-  useEffect(() => {
-    const fetchApp = async () => {
-      try {
-        const res = await axiosClient.get(`/applications/${id}`);
-        if (res.data.success) {
-          setData(res.data);
+  const handleOpenReupload = (doc, deficiency) => {
+    setReuploadTarget({ doc, deficiency });
+    setReuploadSuccessMsg(null);
+    setShowReuploadModal(true);
+  };
 
-          // Confetti celebration if awarded / selected or just submitted
-          if (['SELECTED', 'AWARD_ACCEPTED', 'DISBURSING'].includes(res.data.application?.status) || isJustSubmitted) {
-            try {
-              confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-            } catch {}
-          }
+  const fetchApp = useCallback(async () => {
+    try {
+      const res = await axiosClient.get(`/applications/${id}`);
+      if (res.data.success) {
+        setData(res.data);
+
+        // Confetti celebration if awarded / selected or just submitted
+        if (['SELECTED', 'AWARD_ACCEPTED', 'DISBURSING'].includes(res.data.application?.status) || isJustSubmitted) {
+          try {
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+          } catch {}
         }
-      } catch (err) {
-        setError('Failed to load application details.');
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchApp();
+    } catch (err) {
+      setError('Failed to load application details.');
+    } finally {
+      setLoading(false);
+    }
   }, [id, isJustSubmitted]);
+
+  useEffect(() => {
+    fetchApp();
+  }, [fetchApp]);
+
+  const handleReuploadComplete = () => {
+    setReuploadSuccessMsg('Replacement certificate uploaded! AI OCR has re-verified your document and updated the status.');
+    setTimeout(() => {
+      setShowReuploadModal(false);
+      setReuploadTarget(null);
+      setReuploadSuccessMsg(null);
+      fetchApp();
+    }, 2000);
+  };
 
   if (loading) {
     return (
@@ -102,17 +125,57 @@ const ApplicationDetail = () => {
 
           {/* Open Deficiency Warning Alert */}
           {openDeficiencies.length > 0 && (
-            <Alert variant="warning" className="p-3 mb-4 shadow-sm border-warning d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div className="d-flex align-items-center gap-2">
-                <AlertTriangle size={24} className="text-warning flex-shrink-0" />
-                <div>
-                  <strong className="text-dark">Active Deficiency on Document: {openDeficiencies[0].docKey}</strong>
-                  <div className="small text-secondary">{openDeficiencies[0].reason} (Due by: {new Date(openDeficiencies[0].dueDate).toLocaleDateString('en-IN')})</div>
+            <Alert variant="warning" className="p-3 mb-4 shadow-sm border-warning">
+              <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                <div className="d-flex align-items-center gap-2">
+                  <AlertTriangle size={24} className="text-warning flex-shrink-0" />
+                  <div>
+                    <strong className="text-dark fs-6">⚠ Action Required: Document Deficiency Notice ({openDeficiencies.length})</strong>
+                    <div className="small text-secondary">
+                      One or more uploaded documents require attention or have been flagged by the scrutiny officer. Please review and re-upload.
+                    </div>
+                  </div>
                 </div>
+                <Link to="/applicant/deficiencies" className="btn btn-outline-dark btn-sm fw-bold">
+                  Deficiency Inbox →
+                </Link>
               </div>
-              <Link to="/applicant/deficiencies" className="btn btn-warning btn-sm fw-bold text-dark">
-                Re-Upload Document →
-              </Link>
+
+              <div className="d-flex flex-column gap-2 mt-2">
+                {openDeficiencies.map((def) => {
+                  const linkedDoc = documents.find(d => (def.documentId && (d._id === def.documentId || d._id === def.documentId?._id)) || d.docKey === def.docKey);
+                  return (
+                    <div key={def._id} className="p-2.5 bg-white rounded border small d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <div>
+                        <strong className="text-dark text-capitalize">{def.docKey?.replace(/_/g, ' ')}</strong>: <span className="text-danger fw-semibold">"{def.reason}"</span>
+                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                          Raised by: <strong>{def.raisedBy}</strong> | Due: <strong>{new Date(def.dueDate).toLocaleDateString('en-IN')}</strong>
+                        </div>
+                      </div>
+                      <div className="d-flex gap-2">
+                        {linkedDoc && (
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="d-inline-flex align-items-center gap-1"
+                            onClick={() => handleOpenPreview(linkedDoc)}
+                          >
+                            <Eye size={14} /> View Existing Document
+                          </Button>
+                        )}
+                        <Button
+                          variant="warning"
+                          size="sm"
+                          className="fw-bold text-dark d-inline-flex align-items-center gap-1"
+                          onClick={() => handleOpenReupload(linkedDoc, def)}
+                        >
+                          <UploadCloud size={14} /> Re-upload Document
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </Alert>
           )}
 
@@ -188,9 +251,48 @@ const ApplicationDetail = () => {
               <div className="text-muted small py-3 text-center">No documents uploaded.</div>
             ) : (
               <div>
-                {documents.map((doc) => (
-                  <OcrResultCard key={doc._id} document={doc} onPreview={handleOpenPreview} />
-                ))}
+                {documents.map((doc) => {
+                  const openDef = openDeficiencies.find(d => 
+                    (d.documentId && (d.documentId === doc._id || d.documentId?._id === doc._id)) || 
+                    d.docKey === doc.docKey
+                  );
+                  const isActionRequired = openDef || doc.verificationStatus === 'rejected';
+
+                  return (
+                    <div key={doc._id} className="mb-4">
+                      {isActionRequired && (
+                        <div className="alert alert-danger py-2 px-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2 rounded border-danger shadow-sm">
+                          <div className="d-flex align-items-center gap-2">
+                            <AlertTriangle size={18} className="text-danger flex-shrink-0" />
+                            <div className="small">
+                              <strong className="text-danger">⚠ ACTION REQUIRED: Re-upload Needed</strong>
+                              <div className="text-dark">{openDef ? openDef.reason : (doc.officerRemark || 'Discrepancy detected during verification.')}</div>
+                            </div>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              className="d-inline-flex align-items-center gap-1"
+                              onClick={() => handleOpenPreview(doc)}
+                            >
+                              <Eye size={14} /> View Existing Document
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="fw-bold d-inline-flex align-items-center gap-1"
+                              onClick={() => handleOpenReupload(doc, openDef)}
+                            >
+                              <UploadCloud size={14} /> Re-upload Document
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      <OcrResultCard document={doc} onPreview={handleOpenPreview} />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </Card>
@@ -232,6 +334,40 @@ const ApplicationDetail = () => {
             onHide={() => setShowPreviewModal(false)}
             document={previewDoc}
           />
+
+          {/* Re-upload Document Modal */}
+          <Modal show={showReuploadModal} onHide={() => setShowReuploadModal(false)} centered size="lg">
+            <Modal.Header closeButton className="bg-light">
+              <Modal.Title className="fs-6 fw-bold text-dark d-flex align-items-center gap-2">
+                <UploadCloud size={18} className="text-primary" />
+                <span>Re-upload Document: {reuploadTarget?.doc?.docKey?.replace(/_/g, ' ').toUpperCase() || reuploadTarget?.deficiency?.docKey?.replace(/_/g, ' ').toUpperCase()}</span>
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="p-4">
+              {reuploadSuccessMsg ? (
+                <Alert variant="success" className="py-3 text-center">
+                  <CheckCircle2 size={32} className="text-success mb-2" />
+                  <div className="fw-bold fs-6">{reuploadSuccessMsg}</div>
+                </Alert>
+              ) : (
+                <>
+                  <Alert variant="warning" className="py-2 small mb-3">
+                    <strong>Deficiency / Rejection Reason:</strong> {reuploadTarget?.deficiency?.reason || reuploadTarget?.doc?.officerRemark || 'Please provide a clear and updated copy of the required document.'}
+                  </Alert>
+
+                  <DocumentUploader
+                    applicationId={application._id}
+                    docKey={reuploadTarget?.doc?.docKey || reuploadTarget?.deficiency?.docKey}
+                    label={`Replacement ${reuploadTarget?.doc?.docKey?.replace(/_/g, ' ') || reuploadTarget?.deficiency?.docKey?.replace(/_/g, ' ')}`}
+                    isReupload={true}
+                    currentDoc={reuploadTarget?.doc}
+                    deficiencyId={reuploadTarget?.deficiency?._id}
+                    onUploadSuccess={handleReuploadComplete}
+                  />
+                </>
+              )}
+            </Modal.Body>
+          </Modal>
         </Col>
       </Row>
     </Container>
