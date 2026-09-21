@@ -5,7 +5,8 @@ import axiosClient from '../../api/axiosClient';
 import Sidebar from '../../components/Sidebar';
 import StatusBadge from '../../components/StatusBadge';
 import OcrResultCard from '../../components/OcrResultCard';
-import { ShieldCheck, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileText, Cpu, History } from 'lucide-react';
+import DocumentPreviewModal from '../../components/DocumentPreviewModal';
+import { ShieldCheck, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileText, Cpu, History, Eye } from 'lucide-react';
 
 const ReviewApplication = () => {
   const { id } = useParams();
@@ -16,6 +17,15 @@ const ReviewApplication = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  // Document Preview Modal State
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const handleOpenPreview = (doc) => {
+    setPreviewDoc(doc);
+    setShowPreviewModal(true);
+  };
 
   // Deficiency Modal State
   const [showDeficiencyModal, setShowDeficiencyModal] = useState(false);
@@ -168,7 +178,7 @@ const ReviewApplication = () => {
             {documents.map((doc) => (
               <Card key={doc._id} className="gov-card mb-4 border shadow-sm">
                 <Card.Body className="p-3">
-                  <OcrResultCard document={doc} />
+                  <OcrResultCard document={doc} onPreview={handleOpenPreview} />
 
                   {/* Verifier Action Toolbar */}
                   <div className="p-3 bg-light rounded border d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
@@ -177,6 +187,15 @@ const ReviewApplication = () => {
                     </div>
 
                     <div className="d-flex gap-2">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        className="fw-semibold d-inline-flex align-items-center gap-1"
+                        onClick={() => handleOpenPreview(doc)}
+                      >
+                        <Eye size={15} /> View Document
+                      </Button>
+
                       <Button
                         variant="success"
                         size="sm"
@@ -266,6 +285,13 @@ const ReviewApplication = () => {
               </Form>
             </Modal.Body>
           </Modal>
+
+          {/* Document Preview Modal */}
+          <DocumentPreviewModal
+            show={showPreviewModal}
+            onHide={() => setShowPreviewModal(false)}
+            document={previewDoc}
+          />
         </Col>
       </Row>
     </Container>

@@ -8,6 +8,7 @@ import Timeline from '../../components/Timeline';
 import StatusBadge from '../../components/StatusBadge';
 import OcrResultCard from '../../components/OcrResultCard';
 import EligibilityResultCard from '../../components/EligibilityResultCard';
+import DocumentPreviewModal from '../../components/DocumentPreviewModal';
 import { FileText, ArrowLeft, Award, ShieldCheck, AlertTriangle, CheckCircle2, History } from 'lucide-react';
 
 const ApplicationDetail = () => {
@@ -18,6 +19,15 @@ const ApplicationDetail = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Document Preview Modal State
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const handleOpenPreview = (doc) => {
+    setPreviewDoc(doc);
+    setShowPreviewModal(true);
+  };
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -179,7 +189,7 @@ const ApplicationDetail = () => {
             ) : (
               <div>
                 {documents.map((doc) => (
-                  <OcrResultCard key={doc._id} document={doc} />
+                  <OcrResultCard key={doc._id} document={doc} onPreview={handleOpenPreview} />
                 ))}
               </div>
             )}
@@ -215,6 +225,13 @@ const ApplicationDetail = () => {
               </Table>
             </div>
           </Card>
+
+          {/* Document Preview Modal */}
+          <DocumentPreviewModal
+            show={showPreviewModal}
+            onHide={() => setShowPreviewModal(false)}
+            document={previewDoc}
+          />
         </Col>
       </Row>
     </Container>

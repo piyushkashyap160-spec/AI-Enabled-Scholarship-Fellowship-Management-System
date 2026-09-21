@@ -1,11 +1,16 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import Document from '../models/Document.js';
 import Application from '../models/Application.js';
 import Deficiency from '../models/Deficiency.js';
 import VerificationLog from '../models/VerificationLog.js';
 import { processDocumentAsync } from '../services/ocrService.js';
 import { sendNotification } from '../services/notificationService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '../../uploads');
 
 export const uploadDocument = async (req, res, next) => {
   try {
@@ -189,6 +194,111 @@ export const reuploadDocument = async (req, res, next) => {
       message: 'Replacement document uploaded. AI OCR is verifying the updated file.',
       document: doc
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Securely stream an uploaded document file for in-browser preview / download
+ * Requires authentication and verifies ownership or verifier/officer/admin role.
+ */
+export const getDocumentFile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const doc = await Document.findById(id).populate('applicationId');
+
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Document not found.' });
+    }
+
+    const application = doc.applicationId;
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Associated application not found.' });
+    }
+
+    // Role-based Authorization:
+    // - applicant: only allowed if this document belongs to their own application
+    // - verifier, officer, admin: allowed
+    const userRole = req.user?.role;
+    const userId = req.user?._id ? req.user._id.toString() : '';
+
+    if (userRole === 'applicant') {
+      const applicantId = application.applicantId ? application.applicantId.toString() : '';
+      if (applicantId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to view this document.'
+        });
+      }
+    } else if (!['verifier', 'officer', 'admin'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to view this document.'
+      });
+    }
+
+    // Path verification
+    if (!doc.storedPath) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document file is unavailable on the server.'
+      });
+    }
+
+    // Resolve stored path safely and prevent path traversal
+    const resolvedPath = path.resolve(doc.storedPath);
+    if (!resolvedPath.toLowerCase().startsWith(uploadsDir.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized to view this document.'
+      });
+    }
+
+    // Verify file exists on disk
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document file is unavailable on the server.'
+      });
+    }
+
+    // Determine correct Content-Type
+    const ext = path.extname(resolvedPath).toLowerCase();
+    const origExt = path.extname(doc.originalName || '').toLowerCase();
+
+    const MIME_MAP = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.txt': 'text/plain; charset=utf-8'
+    };
+
+    let contentType = MIME_MAP[ext] || MIME_MAP[origExt] || doc.mimeType || 'application/octet-stream';
+    if (ext === '.txt') {
+      contentType = 'text/plain; charset=utf-8';
+    }
+
+    const stat = fs.statSync(resolvedPath);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', stat.size);
+
+    const isDownload = req.query.download === 'true';
+    const dispositionType = isDownload ? 'attachment' : 'inline';
+    const cleanFileName = (doc.originalName || path.basename(resolvedPath)).replace(/["\r\n]/g, '_');
+
+    res.setHeader('Content-Disposition', `${dispositionType}; filename="${cleanFileName}"`);
+
+    const stream = fs.createReadStream(resolvedPath);
+    stream.on('error', () => {
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: 'Failed to stream document file.' });
+      }
+    });
+
+    stream.pipe(res);
   } catch (error) {
     next(error);
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, ProgressBar, Alert, Badge, Table } from 'react-bootstrap';
+import { Card, ProgressBar, Alert, Badge, Table, Button } from 'react-bootstrap';
 import { FileText, CheckCircle, AlertTriangle, XCircle, Eye, Cpu } from 'lucide-react';
 
 const OcrResultCard = ({ document: doc, onPreview = null }) => {
@@ -39,7 +39,18 @@ const OcrResultCard = ({ document: doc, onPreview = null }) => {
           <strong className="text-dark fs-6">{formatKey(doc.docKey)}</strong>
           <span className="text-muted small">({doc.originalName})</span>
         </div>
-        <div>
+        <div className="d-flex align-items-center gap-2">
+          {onPreview && (
+            <Button
+              variant="outline-primary"
+              size="sm"
+              className="py-1 px-2.5 d-inline-flex align-items-center gap-1 fw-semibold"
+              onClick={() => onPreview(doc)}
+              title="View original uploaded document"
+            >
+              <Eye size={14} /> View Document
+            </Button>
+          )}
           {getStatusBadge()}
         </div>
       </Card.Header>
