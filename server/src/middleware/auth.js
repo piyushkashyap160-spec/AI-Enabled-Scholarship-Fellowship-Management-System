@@ -1,6 +1,17 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable must be set in production.');
+    }
+    return 'development_only_secret_key_change_in_env';
+  }
+  return secret;
+};
+
 export const protect = async (req, res, next) => {
   let token;
 
@@ -16,7 +27,7 @@ export const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'mota_sih_26239_super_secure_jwt_secret_key_2026');
+    const decoded = jwt.verify(token, getJwtSecret());
     const user = await User.findById(decoded.id).select('-passwordHash');
 
     if (!user) {

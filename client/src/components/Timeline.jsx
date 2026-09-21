@@ -78,12 +78,45 @@ const Timeline = ({ currentStatus = 'SUBMITTED', stageHistory = [] }) => {
         })}
       </div>
 
-      {/* Stage History Logs in collapse / table */}
+      {/* Stage History Logs & Case File Events */}
       {stageHistory.length > 0 && (
-        <div className="mt-3 pt-3 border-top bg-light p-2.5 rounded">
-          <div className="small fw-bold text-dark mb-1">Latest Stage Remarks:</div>
-          <div className="small text-secondary fst-italic">
-            "{stageHistory[stageHistory.length - 1]?.remark || 'Application progressing through standard administrative scrutiny.'}"
+        <div className="mt-3 pt-3 border-top">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <span className="small fw-bold text-dark d-flex align-items-center gap-1">
+              <span>🏛️ Application Case File (Chronological Timeline):</span>
+            </span>
+            <span className="badge bg-light text-secondary border">{stageHistory.length} Recorded Events</span>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table table-sm table-bordered gov-table small align-middle mb-2 bg-white">
+              <thead className="table-light">
+                <tr>
+                  <th style={{ width: '22%' }}>Date / Time</th>
+                  <th style={{ width: '20%' }}>Stage / Action</th>
+                  <th style={{ width: '22%' }}>Actor / Authority</th>
+                  <th style={{ width: '36%' }}>Reason / Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stageHistory.map((entry, idx) => (
+                  <tr key={idx}>
+                    <td className="text-muted">
+                      {entry.at ? new Date(entry.at).toLocaleString('en-IN') : 'N/A'}
+                    </td>
+                    <td>
+                      <StatusBadge status={entry.stage} size="sm" />
+                    </td>
+                    <td className="fw-semibold text-dark">
+                      {entry.by || 'System'}
+                    </td>
+                    <td className="text-secondary">
+                      {entry.remark || 'Standard stage transition completed.'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

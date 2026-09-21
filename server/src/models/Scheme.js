@@ -37,9 +37,41 @@ const schemeSchema = new mongoose.Schema({
   code: {
     type: String,
     required: true,
-    unique: true,
     uppercase: true,
     trim: true
+  },
+  academicYear: {
+    type: String,
+    default: '2026-27',
+    trim: true
+  },
+  version: {
+    type: Number,
+    default: 1
+  },
+  effectiveFrom: {
+    type: Date,
+    default: Date.now
+  },
+  effectiveTo: {
+    type: Date,
+    default: null
+  },
+  sourceUrl: {
+    type: String,
+    default: ''
+  },
+  sourceDocument: {
+    type: String,
+    default: ''
+  },
+  lastVerifiedAt: {
+    type: Date,
+    default: Date.now
+  },
+  approvedBy: {
+    type: String,
+    default: 'Ministry of Tribal Affairs'
   },
   name: {
     type: String,
@@ -108,6 +140,8 @@ const schemeSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+schemeSchema.index({ code: 1, academicYear: 1, version: 1 }, { unique: true });
 
 const Scheme = mongoose.model('Scheme', schemeSchema);
 export default Scheme;

@@ -10,24 +10,45 @@ const projectRoot = path.resolve(__dirname, '../../../');
 const scriptPath = path.join(projectRoot, 'ml/scripts/predict_api.py');
 
 /**
+ * Canonical mapping helper for document keys
+ * Normalizes between camelCase and snake_case (e.g. casteCertificate <-> caste_certificate)
+ */
+export const normalizeDocKey = (key) => {
+  if (!key) return '';
+  // Convert camelCase to snake_case
+  return key.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
+};
+
+export const findDocumentByDocKey = (docs = [], targetKey = '') => {
+  const targetCanonical = normalizeDocKey(targetKey);
+  return docs.find(d => normalizeDocKey(d.docKey) === targetCanonical && d.isCurrent !== false)
+    || docs.find(d => normalizeDocKey(d.docKey) === targetCanonical);
+};
+
+const getPythonCommand = () => {
+  return process.env.PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');
+};
+
+/**
  * Executes Python ML Inference on an application payload
  */
 export const runMLPrediction = async (payload) => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const jsonStr = JSON.stringify(payload);
-    
-    execFile('python3', [scriptPath, jsonStr], { cwd: projectRoot }, (error, stdout, stderr) => {
+    const pythonCmd = getPythonCommand();
+
+    execFile(pythonCmd, [scriptPath, jsonStr], { cwd: projectRoot }, (error, stdout, stderr) => {
       if (error) {
-        // Fallback to internal heuristic if Python fails
-        console.warn('[ML Service] Python execution warning:', stderr || error.message);
+        console.warn('[ML Service] Python execution unavailable:', stderr || error.message);
         return resolve(fallbackMLInference(payload));
       }
 
       try {
         const parsed = JSON.parse(stdout.trim());
+        parsed.isAvailable = true;
         resolve(parsed);
       } catch (parseErr) {
-        console.warn('[ML Service] Parse error on ML output, using fallback');
+        console.warn('[ML Service] Parse error on ML output, using non-fabricating fallback:', parseErr.message);
         resolve(fallbackMLInference(payload));
       }
     });
@@ -47,13 +68,22 @@ export const predictApplicationById = async (applicationId) => {
   }
 
   const docs = await Document.find({ applicationId });
-  const casteDoc = docs.find(d => d.docKey === 'casteCertificate');
-  const incomeDoc = docs.find(d => d.docKey === 'incomeCertificate');
-  const marksDoc = docs.find(d => d.docKey === 'marksheet');
+  const casteDoc = findDocumentByDocKey(docs, 'caste_certificate');
+  const incomeDoc = findDocumentByDocKey(docs, 'income_certificate');
+  const marksDoc = findDocumentByDocKey(docs, 'marksheet');
+
+  // Verify true document status using schema values ('done', 'auto_ok', 'approved')
+  const isDocVerified = (doc) => {
+    if (!doc) return false;
+    const isDone = doc.ocrStatus === 'done';
+    const isApproved = ['auto_ok', 'approved'].includes(doc.verificationStatus);
+    const noCritMismatches = !doc.mismatches || !doc.mismatches.some(m => m.severity === 'critical');
+    return isDone && (isApproved || noCritMismatches);
+  };
 
   const payload = {
     scheme_code: app.schemeId?.code || 'ARG45',
-    age: 24,
+    age: app.formData?.age || (app.applicantId?.profile?.dob ? new Date().getFullYear() - new Date(app.applicantId.profile.dob).getFullYear() : 24),
     gender: app.applicantId?.profile?.gender || 'female',
     state: app.applicantId?.profile?.state || 'Jharkhand',
     education_level: app.applicantId?.profile?.education?.level || 'masters',
@@ -64,10 +94,10 @@ export const predictApplicationById = async (applicationId) => {
     has_admission_offer: true,
     is_pwd: Boolean(app.applicantId?.profile?.disability),
     pwd_percent: Number(app.applicantId?.profile?.disabilityPercent || 0),
-    ocr_caste_ok: casteDoc?.ocrStatus === 'completed',
-    ocr_income_ok: incomeDoc?.ocrStatus === 'completed',
-    ocr_academic_ok: marksDoc?.ocrStatus === 'completed',
-    ocr_text_similarity: 0.96,
+    ocr_caste_ok: isDocVerified(casteDoc),
+    ocr_income_ok: isDocVerified(incomeDoc),
+    ocr_academic_ok: isDocVerified(marksDoc),
+    ocr_text_similarity: casteDoc?.confidence ? casteDoc.confidence / 100 : 0.95,
     income_discrepancy_ratio: 1.0,
     marks_discrepancy: 0.0,
     duplicate_cert_count: 1,
@@ -85,33 +115,34 @@ export const predictApplicationById = async (applicationId) => {
 };
 
 /**
- * Fallback ML inference engine if Python is unavailable
+ * Transparent Fallback when Python ML service is offline or fails.
+ * CRITICAL RULE: Never silently fabricate applicant scores, confidence percentages,
+ * or "Auto-Approve" status tags. Clearly indicate that ML is unavailable and that
+ * deterministic rule-based verification with human review is required.
  */
-function fallbackMLInference(data) {
-  const marks = Number(data.marks_percent || 70.0);
-  const income = Number(data.family_income || 300000);
-  const isEligible = marks >= 50.0 && income <= 600000;
-
+export function fallbackMLInference(data) {
   return {
+    isAvailable: false,
+    message: 'ML analysis unavailable — manual/rule-based verification required.',
     eligibility: {
-      decision: isEligible ? 'Eligible' : 'Ineligible',
-      confidence: 94.5,
-      status_tag: isEligible ? 'Auto-Approve Candidate' : 'Flagged Ineligible'
+      decision: 'Requires Review',
+      confidence: null,
+      status_tag: 'AI Recommendation: Manual Review Required'
     },
     merit_assessment: {
-      predicted_merit_score: Math.min(100, Math.round(marks * 0.7 + (income <= 250000 ? 25 : 15))),
-      estimated_national_percentile: 85.0,
-      seat_allocation_prospect: marks >= 70 ? 'High' : 'Moderate'
+      predicted_merit_score: null,
+      estimated_national_percentile: null,
+      seat_allocation_prospect: 'Requires Human Scrutiny'
     },
     fraud_risk_assessment: {
-      fraud_risk_score: 2.5,
-      risk_level: 'Clean / Normal',
+      fraud_risk_score: null,
+      risk_level: 'Manual Review Required',
       is_statistical_anomaly: false,
-      confidence_passed: true
+      confidence_passed: false
     },
     recommendation: {
-      top_scheme_match: data.scheme_code || 'ARG45',
-      reason: 'Rule heuristic match'
+      top_scheme_match: data?.scheme_code || 'ARG45',
+      reason: 'Rule heuristic evaluation required (ML offline).'
     }
   };
 }

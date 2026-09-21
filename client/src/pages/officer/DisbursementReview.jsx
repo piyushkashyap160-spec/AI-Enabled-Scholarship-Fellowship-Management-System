@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Table, Spinner, Alert, Modal, Form } from 'react-bootstrap';
 import axiosClient from '../../api/axiosClient';
 import Sidebar from '../../components/Sidebar';
@@ -33,12 +33,15 @@ const DisbursementReview = () => {
     fetchPendingDisbursements();
   }, []);
 
-  const getReportUrl = (pathOrFilename) => {
-    if (!pathOrFilename) return null;
-    const filename = pathOrFilename.split(/[\\/]/).pop();
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    const backendBase = apiBase.replace(/\/api\/?$/, '');
-    return `${backendBase}/uploads/${filename}`;
+  const handleViewReport = async (disb) => {
+    try {
+      const res = await axiosClient.get(`/disbursements/${disb._id}/report`, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      setErrorMsg('Failed to retrieve authorized progress report file.');
+    }
   };
 
   const handleOpenReleaseModal = (disb) => {
@@ -170,8 +173,6 @@ const DisbursementReview = () => {
                       const app = disb.applicationId || {};
                       const applicant = app.applicantId || {};
                       const scheme = app.schemeId || {};
-                      const reportUrl = getReportUrl(disb.progressReportPath);
-
                       return (
                         <tr key={disb._id}>
                           <td className="fw-bold text-center">
@@ -199,16 +200,16 @@ const DisbursementReview = () => {
                                   ✓ Supervisor Certified
                                 </span>
                               )}
-                              {reportUrl ? (
-                                <a
-                                  href={reportUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn btn-outline-primary btn-sm py-0 px-2 d-inline-flex align-items-center gap-1"
+                              {disb.progressReportPath ? (
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  className="py-0 px-2 d-inline-flex align-items-center gap-1"
                                   style={{ fontSize: '0.75rem', width: 'fit-content' }}
+                                  onClick={() => handleViewReport(disb)}
                                 >
                                   <FileText size={12} /> View Report <ArrowUpRight size={12} />
-                                </a>
+                                </Button>
                               ) : (
                                 <span className="text-muted fst-italic" style={{ fontSize: '0.75rem' }}>
                                   No file attached

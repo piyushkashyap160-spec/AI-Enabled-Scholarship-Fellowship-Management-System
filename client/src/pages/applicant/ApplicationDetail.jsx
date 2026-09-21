@@ -240,6 +240,54 @@ const ApplicationDetail = () => {
             />
           )}
 
+          {/* Transparent Merit Score Breakdown (Phase 11) */}
+          {application.meritScore !== null && application.meritScore !== undefined && (
+            <Card className="gov-card p-3 mb-4 border border-primary bg-light">
+              <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                  <Award size={20} className="text-primary" />
+                  <span>Transparent Merit Evaluation Breakdown</span>
+                </h5>
+                <Badge bg="primary" className="fs-6 px-3 py-1">
+                  Merit Score: {application.meritScore} / 100 {application.meritRank ? `(Rank #${application.meritRank})` : ''}
+                </Badge>
+              </div>
+              <p className="text-muted small mb-3">
+                Score calculated transparently using Ministry scheme-configured merit weights ({scheme?.code || 'Scheme'}):
+              </p>
+              {application.meritBreakdown ? (
+                <div className="table-responsive">
+                  <Table size="sm" bordered hover className="gov-table small mb-0 bg-white">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Evaluation Criterion</th>
+                        <th>Configured Weight</th>
+                        <th>Raw Score (0-100)</th>
+                        <th className="text-end">Weighted Points</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(application.meritBreakdown).map(([k, item]) => (
+                        <tr key={k}>
+                          <td className="fw-semibold">{item.label || k}</td>
+                          <td>{Math.round((item.weight || 0) * 100)}%</td>
+                          <td>{item.rawScore}</td>
+                          <td className="text-end fw-bold text-primary">{item.weightedScore} pts</td>
+                        </tr>
+                      ))}
+                      <tr className="table-primary fw-bold">
+                        <td colSpan="3">Total Transparent Merit Score</td>
+                        <td className="text-end">{application.meritScore} / 100</td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="small text-muted">Breakdown details recorded in official merit roster.</div>
+              )}
+            </Card>
+          )}
+
           {/* Uploaded Documents & OCR Inspection Cards */}
           <Card className="gov-card p-3 mb-4 border">
             <h5 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">

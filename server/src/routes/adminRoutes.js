@@ -5,6 +5,7 @@ import {
   overrideApplicationStatus,
   getAnomalies,
   getAuditLogs,
+  verifyAuditTrail,
   getUsers,
   updateUserRole
 } from '../controllers/adminController.js';
@@ -20,6 +21,7 @@ router.get('/merit/:schemeId', getMeritList);
 router.post('/merit/:schemeId/publish', publishMeritList);
 router.post('/applications/:id/override', overrideApplicationStatus);
 router.get('/anomalies', getAnomalies);
+router.get('/audit/verify', verifyAuditTrail);
 router.get('/audit', getAuditLogs);
 router.get('/users', getUsers);
 router.put('/users/:id/role', updateUserRole);

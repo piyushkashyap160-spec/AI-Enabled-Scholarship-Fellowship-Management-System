@@ -3,15 +3,26 @@ import User from '../models/User.js';
 import AuditLog from '../models/AuditLog.js';
 import { sendNotification } from '../services/notificationService.js';
 
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable must be set in production.');
+    }
+    return 'development_only_secret_key_change_in_env';
+  }
+  return secret;
+};
+
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'mota_sih_26239_super_secure_jwt_secret_key_2026', {
+  return jwt.sign({ id }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
 
 export const register = async (req, res, next) => {
   try {
-    const { name, email, phone, password, role = 'applicant', preferredLanguage = 'en', profile = {} } = req.body;
+    const { name, email, phone, password, preferredLanguage = 'en', profile = {} } = req.body;
 
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
@@ -25,12 +36,14 @@ export const register = async (req, res, next) => {
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
+    // Security Hardening: Public registration ALWAYS creates role = 'applicant'.
+    // Client cannot self-promote to admin, officer, or verifier.
     const user = await User.create({
       name,
       email: email.toLowerCase().trim(),
       phone,
       passwordHash: password,
-      role: ['applicant', 'verifier', 'officer', 'admin'].includes(role) ? role : 'applicant',
+      role: 'applicant',
       isVerified: false,
       otp,
       otpExpiry,

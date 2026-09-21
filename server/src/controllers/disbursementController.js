@@ -1,7 +1,14 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import Disbursement from '../models/Disbursement.js';
 import Application from '../models/Application.js';
 import AuditLog from '../models/AuditLog.js';
 import { sendNotification } from '../services/notificationService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, '../../uploads');
 
 export const getMyDisbursements = async (req, res, next) => {
   try {
@@ -70,6 +77,17 @@ export const uploadProgressReport = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Disbursement milestone not found.' });
     }
 
+    // Role-based Authorization: Applicant can only upload to their own application's disbursement
+    if (req.user.role === 'applicant') {
+      const applicantId = disbursement.applicationId?.applicantId ? disbursement.applicationId.applicantId.toString() : '';
+      if (applicantId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to upload progress reports for this fellowship milestone.'
+        });
+      }
+    }
+
     disbursement.progressReportPath = req.file.path;
     disbursement.guideApproved = true; // Mark certified by research guide
     await disbursement.save();
@@ -79,6 +97,48 @@ export const uploadProgressReport = async (req, res, next) => {
       message: 'Progress report and supervisor certification submitted successfully.',
       disbursement
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDisbursementReport = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const disbursement = await Disbursement.findById(id).populate({
+      path: 'applicationId',
+      populate: { path: 'applicantId' }
+    });
+
+    if (!disbursement || !disbursement.progressReportPath) {
+      return res.status(404).json({ success: false, message: 'Progress report not found.' });
+    }
+
+    const application = disbursement.applicationId;
+    if (req.user.role === 'applicant') {
+      const applicantId = application?.applicantId?._id ? application.applicantId._id.toString() : application?.applicantId?.toString();
+      if (applicantId !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, message: 'You are not authorized to view this progress report.' });
+      }
+    } else if (!['verifier', 'officer', 'admin'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to view this progress report.' });
+    }
+
+    const resolvedPath = path.resolve(disbursement.progressReportPath);
+    if (!resolvedPath.toLowerCase().startsWith(uploadsDir.toLowerCase())) {
+      return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    if (!fs.existsSync(resolvedPath)) {
+      return res.status(404).json({ success: false, message: 'File is unavailable on the server.' });
+    }
+
+    const ext = path.extname(resolvedPath).toLowerCase();
+    const contentType = ext === '.pdf' ? 'application/pdf' : (['.png', '.jpg', '.jpeg'].includes(ext) ? 'image/jpeg' : 'application/octet-stream');
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${path.basename(resolvedPath)}"`);
+
+    fs.createReadStream(resolvedPath).pipe(res);
   } catch (error) {
     next(error);
   }

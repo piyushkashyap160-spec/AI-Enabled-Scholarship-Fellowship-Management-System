@@ -100,34 +100,57 @@ const MachineLearningHub = () => {
         </Row>
       </div>
 
+      {/* Synthetic Data Validation Disclosure Notice */}
+      <Alert variant="info" className="py-2 px-3 mb-4 small d-flex align-items-center justify-content-between flex-wrap gap-2 border-info">
+        <div className="d-flex align-items-center gap-2">
+          <Sparkles size={16} className="text-primary flex-shrink-0" />
+          <span>
+            <strong>Prototype Transparency Disclosure:</strong> Machine learning metrics below reflect prototype validation on synthetic benchmark datasets and simulated ST student profiles — they do not represent real-world production accuracy. AI outputs serve strictly as decision support for authorized human officers.
+          </span>
+        </div>
+        <Badge bg="secondary">Synthetic Prototype Validation</Badge>
+      </Alert>
+
       {/* Model Performance Overview Cards */}
       <Row className="g-3 mb-4">
         <Col md={3} sm={6}>
           <Card className="gov-card border-0 shadow-sm p-3 border-top border-4 border-success">
             <div className="text-muted small fw-bold">MODEL 1: ELIGIBILITY CLASSIFIER</div>
             <h3 className="fw-bold text-success mb-1">99.17%</h3>
-            <div className="small text-muted">Random Forest (120 Estimators)</div>
+            <div className="small text-muted mb-1">Random Forest (120 Estimators)</div>
+            <Badge bg="light" text="dark" className="border small text-wrap text-start fw-normal" style={{ fontSize: '0.68rem' }}>
+              Synthetic-data validation — not production accuracy.
+            </Badge>
           </Card>
         </Col>
         <Col md={3} sm={6}>
           <Card className="gov-card border-0 shadow-sm p-3 border-top border-4 border-primary">
             <div className="text-muted small fw-bold">MODEL 2: MERIT RANK REGRESSOR</div>
             <h3 className="fw-bold text-primary mb-1">R² 0.9991</h3>
-            <div className="small text-muted">Gradient Boosting (150 Estimators)</div>
+            <div className="small text-muted mb-1">Gradient Boosting (150 Estimators)</div>
+            <Badge bg="light" text="dark" className="border small text-wrap text-start fw-normal" style={{ fontSize: '0.68rem' }}>
+              Synthetic-data validation.
+            </Badge>
           </Card>
         </Col>
         <Col md={3} sm={6}>
           <Card className="gov-card border-0 shadow-sm p-3 border-top border-4 border-danger">
             <div className="text-muted small fw-bold">MODEL 3: FRAUD & ANOMALY</div>
             <h3 className="fw-bold text-danger mb-1">100.0%</h3>
-            <div className="small text-muted">Isolation Forest + GBDT</div>
+            <div className="small text-muted mb-1">Isolation Forest + GBDT</div>
+            <Badge bg="light" text="dark" className="border small text-wrap text-start fw-normal" style={{ fontSize: '0.68rem' }}>
+              Synthetic-data validation.
+            </Badge>
           </Card>
         </Col>
         <Col md={3} sm={6}>
           <Card className="gov-card border-0 shadow-sm p-3 border-top border-4 border-warning">
             <div className="text-muted small fw-bold">MODEL 4: SCHEME RECOMMENDER</div>
             <h3 className="fw-bold text-dark mb-1">86.21%</h3>
-            <div className="small text-muted">Multi-Class Profile Matcher</div>
+            <div className="small text-muted mb-1">Multi-Class Profile Matcher</div>
+            <Badge bg="light" text="dark" className="border small text-wrap text-start fw-normal" style={{ fontSize: '0.68rem' }}>
+              Synthetic-data validation.
+            </Badge>
           </Card>
         </Col>
       </Row>

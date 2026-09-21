@@ -233,6 +233,18 @@ export const getAuditLogs = async (req, res, next) => {
   }
 };
 
+export const verifyAuditTrail = async (req, res, next) => {
+  try {
+    const result = await AuditLog.verifyAuditIntegrity();
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getUsers = async (req, res, next) => {
   try {
     const { role, search } = req.query;

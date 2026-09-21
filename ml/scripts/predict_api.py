@@ -94,11 +94,11 @@ def predict_application(app_data):
     recommended_scheme = encoders['scheme_code'].inverse_transform([rec_scheme_idx])[0]
     
     if decision_label == 'Eligible':
-        status_tag = 'Auto-Approve Candidate' if confidence >= 0.80 else 'Eligible (Review Recommended)'
+        status_tag = 'AI Recommendation: Likely Eligible' if confidence >= 0.80 else 'AI Recommendation: Eligible (Review Recommended)'
     elif decision_label == 'Borderline':
-        status_tag = 'Requires Officer Scrutiny'
+        status_tag = 'AI Recommendation: Requires Officer Scrutiny'
     else:
-        status_tag = 'Flagged Ineligible'
+        status_tag = 'AI Recommendation: Flagged for Scrutiny'
 
     return {
         'eligibility': {

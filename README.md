@@ -45,8 +45,9 @@ graph TD
 - **Backend**: Node.js, Express, Mongoose on port `5001`.
 - **Database**: MongoDB (`mongodb://127.0.0.1:27017/sih_scholarship`).
 - **Machine Learning**: Scikit-Learn 1.9 + Python 3.13 (`RandomForest`, `GradientBoosting`, `IsolationForest`) with sub-10ms CLI prediction API.
+  > *Transparency Disclosure: ML metrics represent prototype validation on simulated synthetic datasets aligned with MoTA criteria — not real-world production accuracy. AI models provide recommendations; final decisions remain with authorized human officers.*
 - **Local OCR**: `tesseract.js` + `pdf-parse` (Runs entirely on local CPU, zero cloud APIs, zero external keys).
-- **Security & Auditing**: `jsonwebtoken`, `bcryptjs`, tamper-evident `AuditLog` collection.
+- **Security & Auditing**: `jsonwebtoken`, `bcryptjs`, cryptographically chained tamper-evident `AuditLog` collection.
 - **Bilingual i18n & Themes**: English & हिन्दी with real-time Dark / Light Mode.
 
 ---

@@ -26,6 +26,11 @@ import mlRoutes from './routes/mlRoutes.js';
 
 dotenv.config();
 
+// Fail-fast in production if JWT_SECRET is missing
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || !process.env.JWT_SECRET.trim())) {
+  throw new Error('FATAL: JWT_SECRET environment variable must be explicitly defined in production.');
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -34,18 +39,39 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Middlewares
+// Allowed Origins Parser
+const getAllowedOrigins = () => {
+  const list = [];
+  if (process.env.CLIENT_URL) list.push(process.env.CLIENT_URL.trim());
+  if (process.env.ALLOWED_ORIGINS) {
+    process.env.ALLOWED_ORIGINS.split(',').forEach(o => {
+      const trimmed = o.trim();
+      if (trimmed) list.push(trimmed);
+    });
+  }
+  return list;
+};
+
+// Middlewares - Hardened CORS
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    // Allow non-browser requests (e.g. server-to-server, curl, tests)
     if (!origin) return callback(null, true);
-    if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+
+    const isDev = process.env.NODE_ENV !== 'production';
+    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    if (isDev && isLocalhost) {
       return callback(null, true);
     }
-    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) {
+
+    const allowed = getAllowedOrigins();
+    if (allowed.includes(origin)) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive for local development
+
+    // Explicitly reject unauthorized cross-origin requests
+    return callback(new Error(`Not allowed by CORS: Origin ${origin} is not authorized.`));
   },
   credentials: true
 }));
@@ -57,8 +83,8 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// NOTE: Sensitive uploaded files are NOT served statically via /uploads.
+// All documents must be accessed via authenticated endpoint GET /api/documents/:id/file
 
 // Health Check
 app.get('/api/health', (req, res) => {

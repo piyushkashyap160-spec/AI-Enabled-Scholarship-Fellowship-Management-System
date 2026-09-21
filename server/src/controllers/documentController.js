@@ -100,10 +100,21 @@ export const uploadDocument = async (req, res, next) => {
 export const getDocumentStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doc = await Document.findById(id);
+    const doc = await Document.findById(id).populate('applicationId');
 
     if (!doc) {
       return res.status(404).json({ success: false, message: 'Document not found.' });
+    }
+
+    // Role-based Authorization: Applicants can only view status of their own documents
+    if (req.user.role === 'applicant') {
+      const applicantId = doc.applicationId?.applicantId ? doc.applicationId.applicantId.toString() : '';
+      if (applicantId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to view this document status.'
+        });
+      }
     }
 
     res.json({
@@ -118,10 +129,41 @@ export const getDocumentStatus = async (req, res, next) => {
 export const deleteDocument = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const doc = await Document.findById(id);
+    const doc = await Document.findById(id).populate('applicationId');
 
     if (!doc) {
       return res.status(404).json({ success: false, message: 'Document not found.' });
+    }
+
+    const application = doc.applicationId;
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Associated application not found.' });
+    }
+
+    // Verifiers and Officers cannot arbitrarily delete applicant documents
+    if (['verifier', 'officer'].includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Staff verification officers cannot delete applicant documents.'
+      });
+    }
+
+    // Applicants can only delete their own document while application is still in DRAFT
+    if (req.user.role === 'applicant') {
+      const applicantId = application.applicantId ? application.applicantId.toString() : '';
+      if (applicantId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to delete documents for this application.'
+        });
+      }
+
+      if (application.status !== 'DRAFT') {
+        return res.status(400).json({
+          success: false,
+          message: 'Documents cannot be deleted after application has been submitted. Use the re-upload workflow for deficient documents.'
+        });
+      }
     }
 
     if (fs.existsSync(doc.storedPath)) {

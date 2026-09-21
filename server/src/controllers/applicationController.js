@@ -41,6 +41,8 @@ export const createApplication = async (req, res, next) => {
     const application = await Application.create({
       applicantId,
       schemeId,
+      schemeVersion: scheme.version || 1,
+      academicYear: scheme.academicYear || '2026-27',
       applicationNo,
       formData,
       status: 'DRAFT',
@@ -264,10 +266,21 @@ export const getApplicationById = async (req, res, next) => {
 export const getApplicationTimeline = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const application = await Application.findById(id).select('applicationNo status stageHistory createdAt');
+    const application = await Application.findById(id).select('applicantId applicationNo status stageHistory createdAt');
 
     if (!application) {
       return res.status(404).json({ success: false, message: 'Application not found.' });
+    }
+
+    // Role-based Authorization: Applicants can only view their own timeline
+    if (req.user.role === 'applicant') {
+      const applicantId = application.applicantId ? application.applicantId.toString() : '';
+      if (applicantId !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to view this application timeline.'
+        });
+      }
     }
 
     res.json({

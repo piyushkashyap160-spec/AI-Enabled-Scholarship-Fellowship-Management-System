@@ -30,6 +30,14 @@ const applicationSchema = new mongoose.Schema({
     ref: 'Scheme',
     required: true
   },
+  schemeVersion: {
+    type: Number,
+    default: 1
+  },
+  academicYear: {
+    type: String,
+    default: '2026-27'
+  },
   applicationNo: {
     type: String,
     required: true,
