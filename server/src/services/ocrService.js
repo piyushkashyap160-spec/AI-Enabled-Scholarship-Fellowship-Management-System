@@ -235,7 +235,9 @@ export const extractFieldsByDocType = (docKey, rawText) => {
 
     case 'income_certificate': {
       // Income extraction (supports ₹, Rs., digits, and words like Lakh)
-      const numMatch = rawText.match(/(?:annual\s*income|family\s*income|income\s*is|rs\.?|₹)\s*[:\s]*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?|[0-9]{4,8})/i);
+      // Tesseract often reads the rupee sign (₹) as ¥, % or Z, so normalise it before matching
+      const normText = rawText.replace(/[¥%Z]\s*(?=[0-9])/g, '₹');
+      const numMatch = normText.match(/(?:annual\s*(?:family\s*)?income(?:\s*of)?|family\s*income|income\s*is|rs\.?|₹)\s*[:\s]*(?:₹|rs\.?)?\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?|[0-9]{4,8})/i);
       if (numMatch) {
         const rawNum = numMatch[1].replace(/,/g, '');
         const val = parseFloat(rawNum);
