@@ -8,7 +8,7 @@
 
 The **Ministry of Tribal Affairs (MoTA)** administers flagship higher education and research fellowships for Scheduled Tribe (ST) students across India and abroad. This system digitizes, automates, and accelerates scholarship delivery across all 5 official Ministry schemes:
 - **`ARG45` — National Fellowship for ST (NFST)**: M.Phil & Ph.D. research fellowships in Indian Universities and IITs (~750 seats, ₹3.84L/yr).
-- **`AZKMI` — National Overseas Scholarship (NOS)**: Master's & Ph.D. studies in Top 500 QS world universities abroad (~100 seats, full tuition + living allowance).
+- **`AZKMI` — National Overseas Scholarship (NOS)**: Master's & Ph.D. studies in Top 500 QS world universities abroad (20 Slots (17 ST + 3 PVTG), full tuition + living allowance).
 - **`A023B` — Top Class Education for ST**: Full tuition + living expense + ₹45,000 computer grant in 265+ Premier Institutes (IIT, IIM, AIIMS, NIT, NLU).
 - **`BVOBC` — Post-Matric Scholarship for ST**: Centrally Sponsored DBT assistance for Class 11, 12, Degree, and Diploma courses.
 - **`BPVGK` — Pre-Matric Scholarship for ST**: Centrally Sponsored DBT assistance for Classes 9th & 10th to eliminate secondary transition dropouts.

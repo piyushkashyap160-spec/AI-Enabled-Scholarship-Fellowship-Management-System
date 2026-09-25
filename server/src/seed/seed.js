@@ -324,7 +324,7 @@ const seedDatabase = async () => {
       isActive: true,
       openDate,
       closeDate,
-      totalSeats: 100,
+      totalSeats: 20,
       stipendAmountPerYear: 1800000, // ~18L annual tuition & stipend support abroad
       formFields: [
         { key: 'studyCountry', label: 'Destination Country', type: 'select', options: ['United Kingdom', 'United States', 'Australia', 'Canada', 'Germany', 'Singapore', 'New Zealand'], required: true },

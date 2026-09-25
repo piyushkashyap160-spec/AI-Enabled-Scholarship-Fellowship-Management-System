@@ -6,7 +6,7 @@ Generates realistic training datasets based on official Ministry of Tribal Affai
 
 Schemes:
 1. ARG45 - National Fellowship for Higher Education of ST Students (NFST) (750 slots)
-2. AZKMI - National Overseas Scholarship (NOS) (100 slots)
+2. AZKMI - National Overseas Scholarship (NOS) (20 slots (17 ST + 3 PVTG))
 3. A023B - Top Class Education for ST Students (265+ Institutes)
 4. BVOBC - Post-Matric Scholarship Scheme for ST Students
 5. BPVGK - Pre-Matric Scholarship Scheme for ST Students

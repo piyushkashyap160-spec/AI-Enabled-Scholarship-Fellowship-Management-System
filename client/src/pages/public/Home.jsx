@@ -52,7 +52,7 @@ const Home = () => {
       tagline: 'Study Abroad at World Top 500 QS Universities',
       subtitle: '100% full international tuition fee reimbursement + annual living allowance ($15,400 USD / £9,900 GBP) + airfare for Master\'s and Ph.D. programmes abroad.',
       stats: [
-        { label: 'Annual Overseas Slots', value: '100 Seats' },
+        { label: 'Annual Overseas Slots', value: '20 Seats (17 ST + 3 PVTG)' },
         { label: 'Max Family Income', value: '≤ ₹6.00 Lakhs' },
         { label: 'QS University Rank', value: 'Top 500 Global' }
       ],
@@ -60,7 +60,7 @@ const Home = () => {
       image: '/images/hero/slide_nos.jpg',
       floatingBadges: [
         { position: 'top-left', text: '✈️ Oxford, MIT & Harvard', color: '#f59e0b' },
-        { position: 'bottom-right', text: '🌍 100 Overseas Slots', color: '#38bdf8' }
+        { position: 'bottom-right', text: '🌍 20 Overseas Slots (17 ST + 3 PVTG)', color: '#38bdf8' }
       ],
       icon: Globe
     },
@@ -371,7 +371,7 @@ const Home = () => {
             </Col>
             <Col lg={2} md={4} sm={6} xs={6}>
               <div className="stat-metric-card">
-                <div className="stat-metric-number text-info">100</div>
+                <div className="stat-metric-number text-info">20</div>
                 <div className="stat-metric-label">NOS Overseas Seats</div>
               </div>
             </Col>
@@ -552,7 +552,7 @@ const Home = () => {
                 </div>
                 <h5 className="fw-bold fs-6 mb-2">3. Transparent Scrutiny</h5>
                 <p className="small text-secondary mb-0">
-                  AI flags discrepancies for human verifiers. Merit scoring allocates 750 NFST and 100 NOS slots with gender quotas.
+                  AI flags discrepancies for human verifiers. Merit scoring allocates 750 NFST and 20 NOS slots (17 ST + 3 PVTG) with gender quotas.
                 </p>
               </Card>
             </Col>

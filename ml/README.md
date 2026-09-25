@@ -11,7 +11,7 @@ This Machine Learning subsystem is trained specifically on official **Ministry o
 | Scheme Code | Scheme Name | Level | Annual Slots | Max Family Income | Min Academic % | Key Criteria |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`ARG45`** | **National Fellowship for ST Students (NFST)** | M.Phil / Ph.D. in India | **750 Slots** | Priority ≤ ₹6.00L | 55.0% | ST Category, Admission to recognized Indian University/IIT/NIT, 30% Female quota |
-| **`AZKMI`** | **National Overseas Scholarship (NOS)** | Master's / Ph.D. Abroad | **100 Slots** | ≤ ₹6.00L | 55.0% | Age ≤ 35, Top 500 QS/THE International University offer letter |
+| **`AZKMI`** | **National Overseas Scholarship (NOS)** | Master's / Ph.D. Abroad | **20 Slots (17 ST + 3 PVTG)** | ≤ ₹6.00L | 55.0% | Age ≤ 35, Top 500 QS/THE International University offer letter |
 | **`A023B`** | **Top Class Education for ST Students** | UG / PG in India | Notified Institutes | ≤ ₹6.00L | 55.0% | Admission in 265+ notified premier institutes (IITs, IIMs, AIIMS, NITs) |
 | **`BVOBC`** | **Post-Matric Scholarship for ST Students** | 11th, 12th, Degree | All Eligible | ≤ ₹2.50L | 50.0% | Direct Benefit Transfer (DBT) via Aadhaar-seeded bank accounts |
 | **`BPVGK`** | **Pre-Matric Scholarship for ST Students** | 9th & 10th | All Eligible | ≤ ₹2.50L | 50.0% | Centrally Sponsored Scheme via state DBT |
@@ -28,7 +28,7 @@ This Machine Learning subsystem is trained specifically on official **Ministry o
 ### 2. Model 2: Merit Ranking & Percentile Regressor
 - **Algorithm**: `GradientBoostingRegressor` (150 Estimators, Learning Rate=0.08).
 - **R² Score**: **0.9991** | **RMSE**: **0.299 points**.
-- **Function**: Predicts composite merit score (0 to 100) and estimated All-India percentile rank for national slot allocation (750 NFST and 100 NOS slots).
+- **Function**: Predicts composite merit score (0 to 100) and estimated All-India percentile rank for national slot allocation (750 NFST and 20 NOS slots (17 ST + 3 PVTG)).
 - **Weight Matrix**:
   - Academic GPA/Marks: **40%**
   - Institution Prestige (NIRF / QS World Rank): **25%**

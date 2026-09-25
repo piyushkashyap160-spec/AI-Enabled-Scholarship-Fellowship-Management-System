@@ -11,7 +11,7 @@
 - **Theme:** Smart Education / Software Category
 - **Target Official MoTA Schemes (All 5 Integrated):**
   1. **`ARG45` — National Fellowship for Scheduled Tribes (NFST):** Central Sector Scheme for M.Phil and Ph.D. research scholars in Indian Universities, IITs, and NITs (750 annual slots, ₹31,000–₹35,000/mo JRF stipend + annual contingency).
-  2. **`AZKMI` — National Overseas Scholarship (NOS):** Central Sector Scheme for Master's and Ph.D. research abroad in the UK, USA, Australia, Germany, and Canada in Top 500 QS Universities (100 annual seats, covering 100% international tuition fees, visa, travel, and $15,400 USD / £9,900 GBP living allowance).
+  2. **`AZKMI` — National Overseas Scholarship (NOS):** Central Sector Scheme for Master's and Ph.D. research abroad in the UK, USA, Australia, Germany, and Canada in Top 500 QS Universities (20 annual slots (17 ST + 3 PVTG), covering 100% international tuition fees, visa, travel, and $15,400 USD / £9,900 GBP living allowance).
   3. **`A023B` — Top Class Education for ST Students:** Full institute tuition reimbursement + ₹3,000/mo living allowance + ₹45,000 one-time computer/hardware grant for ST students admitted in 265+ Premier Institutes (IITs, IIMs, AIIMS, NITs, NLUs).
   4. **`BVOBC` — Post-Matric Scholarship Scheme for ST Students:** Centrally Sponsored DBT scheme covering compulsory fees and maintenance for Class 11, 12, Degree, Diploma, and Professional courses across all Indian States & UTs.
   5. **`BPVGK` — Pre-Matric Scholarship Scheme for ST Students:** Centrally Sponsored DBT scheme providing financial assistance for Class 9th & 10th ST day-scholars and hostellers to eliminate dropout rates.
@@ -99,7 +99,7 @@ The **User Profile** (`user.profile`) is the core anchor for student identity an
 2. **"Find Schemes For You ⌄" Scroll Bar:**
    - Prominent green pill button smoothly scrolls down to the schemes section upon click.
 3. **6-Card Live Real-Time Metrics Strip:**
-   - Spacious rounded cards displaying `5 Active Schemes`, `750 NFST Seats`, `100 NOS Seats`, `265+ Premier Institutes`, `₹32K/mo JRF Stipend`, `100% DBT Verified`.
+   - Spacious rounded cards displaying `5 Active Schemes`, `750 NFST Seats`, `20 NOS Seats (17 ST + 3 PVTG)`, `265+ Premier Institutes`, `₹32K/mo JRF Stipend`, `100% DBT Verified`.
 4. **Dynamic "See More Schemes →" Expansion:**
    - Displays 3 schemes initially for a clean single-row layout.
    - Clicking **`See More Schemes (2 More) →`** smoothly reveals the remaining schemes, transitioning to **`Show Fewer Schemes ↑`**.

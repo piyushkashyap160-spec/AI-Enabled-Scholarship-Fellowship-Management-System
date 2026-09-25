@@ -40,7 +40,7 @@ router.get('/model-info', async (req, res, next) => {
         },
         supportedSchemes: [
           { code: 'ARG45', name: 'National Fellowship for ST Students (NFST)', slots: 750 },
-          { code: 'AZKMI', name: 'National Overseas Scholarship (NOS)', slots: 100 },
+          { code: 'AZKMI', name: 'National Overseas Scholarship (NOS)', slots: 20 },
           { code: 'A023B', name: 'Top Class Education for ST Students (265+ Institutes)' },
           { code: 'BVOBC', name: 'Post-Matric Scholarship Scheme for ST Students' },
           { code: 'BPVGK', name: 'Pre-Matric Scholarship Scheme for ST Students' }
